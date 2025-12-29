@@ -26,6 +26,7 @@ import {
 } from 'lucide-react';
 
 import AppLogo from './app-logo';
+import category from '@/routes/admin/category';
 
 const mainNavItems: NavItem[] = [
     {
@@ -43,7 +44,7 @@ const mainMenu: NavItem[] = [
         children: [
             {
                 title: 'Категория',
-                href: '/category',
+                href: category.index(),
             },
             {
                 title: 'Подкатегория',
