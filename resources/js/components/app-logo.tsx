@@ -3,7 +3,7 @@ import { Link } from '@inertiajs/react';
 
 export default function AppLogo() {
     return (
-        <Link href={"/"} className={"flex items-center gap-1"}>
+        <>
             <div className="flex aspect-square size-8 items-center shadow justify-center rounded-md bg-sidebar-primary-foreground text-sidebar-primary-foreground">
                 <AppLogoIcon className="size-5 fill-current bg-white" />
             </div>
@@ -12,6 +12,6 @@ export default function AppLogo() {
                     Neutron
                 </span>
             </div>
-        </Link>
+        </>
     );
 }

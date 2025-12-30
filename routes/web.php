@@ -16,7 +16,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
     })->name('dashboard');
 });
 
-require __DIR__ . '/settings.php';
-require __DIR__ . '/admin.php';
+
+Route::middleware(['auth', 'verified', 'role:admin'])
+    ->prefix('admin')
+    ->name('admin.')
+    ->group(function () {
+        require __DIR__ . '/admin.php';
+        require __DIR__ . '/settings.php';
+    });
 require __DIR__ . '/vendor.php';
 require __DIR__ . '/client.php';

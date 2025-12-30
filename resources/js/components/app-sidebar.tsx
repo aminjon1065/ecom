@@ -23,10 +23,11 @@ import {
     ShoppingCart,
     Store,
     Users,
+    Download,
 } from 'lucide-react';
 
-import AppLogo from './app-logo';
 import category from '@/routes/admin/category';
+import AppLogo from './app-logo';
 
 const mainNavItems: NavItem[] = [
     {
@@ -38,12 +39,12 @@ const mainNavItems: NavItem[] = [
 
 const mainMenu: NavItem[] = [
     {
-        title: 'Категория',
-        href: '/#',
+        title: 'Категории',
+        href: category.index(),
         icon: Menu,
         children: [
             {
-                title: 'Категория',
+                title: 'Категории',
                 href: category.index(),
             },
             {
@@ -136,6 +137,11 @@ const mainMenu: NavItem[] = [
                 href: '/blog-comments',
             },
         ],
+    },
+    {
+        title: 'Импорт',
+        href: '/orders',
+        icon: Download,
     },
 ];
 

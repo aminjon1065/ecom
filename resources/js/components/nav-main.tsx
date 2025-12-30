@@ -17,6 +17,7 @@ import { resolveUrl } from '@/lib/utils';
 import { type NavItem } from '@/types';
 import { Link, usePage } from '@inertiajs/react';
 import { ChevronRight } from 'lucide-react';
+import { useState } from 'react';
 
 export function NavMain({
     items = [],
@@ -26,6 +27,13 @@ export function NavMain({
     title?: string;
 }) {
     const page = usePage();
+    const isActive = (item: NavItem) =>
+        item.children?.some((child) =>
+            page.url.startsWith(resolveUrl(child.href)),
+        );
+
+    const [openItems, setOpenItems] = useState<Record<string, boolean>>({});
+
     return (
         <SidebarGroup className="px-2 py-0">
             <SidebarGroupLabel>{title}</SidebarGroupLabel>
@@ -33,13 +41,18 @@ export function NavMain({
                 {items.map((item) => {
                     const hasChildren =
                         item.children && item.children.length > 0;
-
                     if (hasChildren) {
                         return (
                             <Collapsible
                                 key={item.title}
                                 asChild
-                                defaultOpen={item.isActive}
+                                open={isActive(item) || openItems[item.title]}
+                                onOpenChange={(open) =>
+                                    setOpenItems((prev) => ({
+                                        ...prev,
+                                        [item.title]: open,
+                                    }))
+                                }
                                 className="group/collapsible"
                             >
                                 <SidebarMenuItem>

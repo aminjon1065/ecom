@@ -44,9 +44,9 @@ export function NavMain() {
                     </NavigationMenuContent>
                 </NavigationMenuItem>
 
-                <NavigationMenuItem className="hidden md:block">
-                    <Link href={'#'}>Блог</Link>
-                </NavigationMenuItem>
+                {/*<NavigationMenuItem className="hidden md:block">*/}
+                {/*    <Link href={'#'}>Блог</Link>*/}
+                {/*</NavigationMenuItem>*/}
             </NavigationMenuList>
         </NavigationMenu>
     );
