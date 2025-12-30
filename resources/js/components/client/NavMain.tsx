@@ -1,6 +1,4 @@
-import {
-    GalleryVerticalEndIcon
-} from 'lucide-react';
+import { GalleryVerticalEndIcon } from 'lucide-react';
 import * as React from 'react';
 
 import {
@@ -20,8 +18,12 @@ export function NavMain() {
         <NavigationMenu viewport={isMobile}>
             <NavigationMenuList className="flex-wrap">
                 <NavigationMenuItem>
-                    <NavigationMenuTrigger>
-                        <div className="flex space-x-2 items-center gap-1">
+                    <NavigationMenuTrigger
+                        className={
+                            'cursor-pointer bg-sidebar-primary-foreground dark:bg-[#161617]'
+                        }
+                    >
+                        <div className="flex items-center gap-1 space-x-2">
                             <GalleryVerticalEndIcon /> Каталог
                         </div>
                     </NavigationMenuTrigger>

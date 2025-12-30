@@ -1005,6 +1005,15 @@
   resolved "https://registry.yarnpkg.com/@rolldown/pluginutils/-/pluginutils-1.0.0-beta.53.tgz#c57a5234ae122671aff6fe72e673a7ed90f03f87"
   integrity sha512-vENRlFU4YbrwVqNDZ7fLvy+JR1CRkyr01jhSiDpE1u6py3OMzQfztQU2jxykW3ALNxO4kSlqIDeYyD0Y9RcQeQ==
 
+"@rollup/pluginutils@^5.1.0":
+  version "5.3.0"
+  resolved "https://registry.yarnpkg.com/@rollup/pluginutils/-/pluginutils-5.3.0.tgz#57ba1b0cbda8e7a3c597a4853c807b156e21a7b4"
+  integrity sha512-5EdhGZtnu3V88ces7s53hhfK5KSASnJZv8Lulpc04cWO3REESroJXg73DFsOmgbU2BhwV0E20bu2IDZb3VKW4Q==
+  dependencies:
+    "@types/estree" "^1.0.0"
+    estree-walker "^2.0.2"
+    picomatch "^4.0.2"
+
 "@rollup/rollup-android-arm-eabi@4.54.0":
   version "4.54.0"
   resolved "https://registry.yarnpkg.com/@rollup/rollup-android-arm-eabi/-/rollup-android-arm-eabi-4.54.0.tgz#f3ff5dbde305c4fa994d49aeb0a5db5305eff03b"
@@ -1291,7 +1300,7 @@
   dependencies:
     "@babel/types" "^7.28.2"
 
-"@types/estree@1.0.8", "@types/estree@^1.0.6":
+"@types/estree@1.0.8", "@types/estree@^1.0.0", "@types/estree@^1.0.6":
   version "1.0.8"
   resolved "https://registry.yarnpkg.com/@types/estree/-/estree-1.0.8.tgz#958b91c991b1867ced318bedea0e215ee050726e"
   integrity sha512-dWHzHa2WqEXI/O1E9OjrocMTKJl2mSrEolh1Iomrv6U+JuNwaHXsXx9bLu5gG7BUWFIN0skIQJQ/L1rIex4X6w==
@@ -2149,6 +2158,11 @@ estraverse@^5.1.0, estraverse@^5.2.0, estraverse@^5.3.0:
   version "5.3.0"
   resolved "https://registry.yarnpkg.com/estraverse/-/estraverse-5.3.0.tgz#2eea5290702f26ab8fe5370370ff86c965d21123"
   integrity sha512-MMdARuVEQziNTeJD8DgMqmhwR11BRQ/cBP+pLtYdSTnf3MIO8fFeiINEbX36ZdNlfU/7A9f3gUw49B3oQsvwBA==
+
+estree-walker@^2.0.2:
+  version "2.0.2"
+  resolved "https://registry.yarnpkg.com/estree-walker/-/estree-walker-2.0.2.tgz#52f010178c2a4c117a7757cfe942adb7d2da4cac"
+  integrity sha512-Rfkk/Mp/DL7JVje3u18FxFujQlTNR2q6QfMSMB7AvCBx91NGj/ba3kCfza0f6dVDbw7YlRf/nDrn7pQrCCyQ/w==
 
 esutils@^2.0.2:
   version "2.0.3"
@@ -3013,7 +3027,7 @@ picomatch@^2.3.1:
   resolved "https://registry.yarnpkg.com/picomatch/-/picomatch-2.3.1.tgz#3ba3833733646d9d3e4995946c1365a67fb07a42"
   integrity sha512-JU3teHTNjmE2VCGFzuY8EXzCDVwEqB2a8fsIvwaStHhAWJEeVd1o1QD80CU6+ZdEXXSLbSsuLwJjkCBWqRQUVA==
 
-picomatch@^4.0.3:
+picomatch@^4.0.2, picomatch@^4.0.3:
   version "4.0.3"
   resolved "https://registry.yarnpkg.com/picomatch/-/picomatch-4.0.3.tgz#796c76136d1eead715db1e7bad785dedd695a042"
   integrity sha512-5gTmgEY/sqK6gFXLIsQNH19lWb4ebPDLA4SdLP7dsWkIXHWlG66oPuVvXSGFPppYZz8ZDZq0dYYrbHfBCVUb1Q==
@@ -3473,6 +3487,11 @@ tapable@^2.2.0:
   resolved "https://registry.yarnpkg.com/tapable/-/tapable-2.3.0.tgz#7e3ea6d5ca31ba8e078b560f0d83ce9a14aa8be6"
   integrity sha512-g9ljZiwki/LfxmQADO3dEY1CbpmXT5Hm2fJ+QaGKwSXUylMybePR7/67YW7jOrrvjEgL1Fmz5kzyAjWVWLlucg==
 
+tar-mini@^0.2.0:
+  version "0.2.0"
+  resolved "https://registry.yarnpkg.com/tar-mini/-/tar-mini-0.2.0.tgz#2b2cdc215f5b83b0ab8ce363dc9ded22de51849b"
+  integrity sha512-+qfUHz700DWnRutdUsxRRVZ38G1Qr27OetwaMYTdg8hcPxf46U0S1Zf76dQMWRBmusOt2ZCK5kbIaiLkoGO7WQ==
+
 tinyglobby@^0.2.15:
   version "0.2.15"
   resolved "https://registry.yarnpkg.com/tinyglobby/-/tinyglobby-0.2.15.tgz#e228dd1e638cea993d2fdb4fcd2d4602a79951c2"
@@ -3617,6 +3636,14 @@ use-sync-external-store@^1.5.0:
   version "1.6.0"
   resolved "https://registry.yarnpkg.com/use-sync-external-store/-/use-sync-external-store-1.6.0.tgz#b174bfa65cb2b526732d9f2ac0a408027876f32d"
   integrity sha512-Pp6GSwGP/NrPIrxVFAIkOQeyw8lFenOHijQWkUTrDvrF4ALqylP2C/KCkeS9dpUM3KvYRQhna5vt7IL95+ZQ9w==
+
+vite-plugin-compression2@^2.4.0:
+  version "2.4.0"
+  resolved "https://registry.yarnpkg.com/vite-plugin-compression2/-/vite-plugin-compression2-2.4.0.tgz#0a74c6e99f69f1792a3d5dd73de01bf1c7a3a911"
+  integrity sha512-8J4CBF1+dM1I06azba/eXJuJHinLF0Am7lUvRH8AZpu0otJoBaDEnxrIEr5iPZJSwH0AEglJGYCveh7pN52jCg==
+  dependencies:
+    "@rollup/pluginutils" "^5.1.0"
+    tar-mini "^0.2.0"
 
 vite-plugin-full-reload@^1.1.0:
   version "1.2.0"

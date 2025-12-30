@@ -3,6 +3,7 @@ import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
 import laravel from 'laravel-vite-plugin';
 import { defineConfig } from 'vite';
+import compression, { defineAlgorithm } from 'vite-plugin-compression2';
 
 export default defineConfig({
     plugins: [
@@ -15,6 +16,13 @@ export default defineConfig({
             babel: {
                 plugins: ['babel-plugin-react-compiler'],
             },
+        }),
+        compression({
+            algorithms: [
+                'gzip',
+                'brotliCompress',
+                defineAlgorithm('deflate', { level: 9 }),
+            ],
         }),
         tailwindcss(),
         wayfinder({
