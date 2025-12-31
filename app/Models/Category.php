@@ -45,12 +45,12 @@ class Category extends Model
         return $this->hasMany(Product::class);
     }
 
-    public function sub_categories(): HasMany
+    public function subCategories(): HasMany
     {
         return $this->hasMany(SubCategory::class);
     }
 
-    public function child_categories(): HasMany
+    public function childCategories(): HasMany
     {
         return $this->hasMany(ChildCategory::class);
     }

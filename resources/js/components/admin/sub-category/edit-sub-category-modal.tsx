@@ -9,43 +9,40 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
-import category from '@/routes/admin/category';
+import subCategory from '@/routes/admin/sub-category';
+import { Category } from '@/types/category';
+import { SubCategory } from '@/types/sub-category';
 import { useForm } from '@inertiajs/react';
+import { SquarePen } from 'lucide-react';
 import { useState } from 'react';
+import { toast } from 'sonner';
 
-export function AddCategoryModal() {
+interface Props {
+    subCategoryItem: SubCategory;
+    categories: Category[];
+}
+
+export function EditSubCategoryModal({ subCategoryItem, categories }: Props) {
     const [open, setOpen] = useState(false);
-    const [preview, setPreview] = useState<string | null>(null);
 
-    const { data, setData, post, processing, errors, reset } = useForm<{
+    const { data, setData, patch, processing, errors } = useForm<{
         name: string;
-        icon: File | null;
+        category_id: number;
         status: boolean;
     }>({
-        name: '',
-        icon: null,
-        status: true,
+        name: subCategoryItem.name,
+        category_id: subCategoryItem.category_id,
+        status: subCategoryItem.status,
     });
-
-    function onFileChange(e: React.ChangeEvent<HTMLInputElement>) {
-        const file = e.target.files?.[0] || null;
-        setData('icon', file);
-
-        if (file) {
-            setPreview(URL.createObjectURL(file));
-        } else {
-            setPreview(null);
-        }
-    }
 
     function submit(e: React.FormEvent) {
         e.preventDefault();
 
-        post(category.store().url, {
-            forceFormData: true,
+        patch(subCategory.update(subCategoryItem.id).url, {
+            preserveScroll: true,
+            preserveState: true,
             onSuccess: () => {
-                reset();
-                setPreview(null);
+                toast.success('Подкатегория обновлена');
                 setOpen(false);
             },
         });
@@ -54,15 +51,42 @@ export function AddCategoryModal() {
     return (
         <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild>
-                <Button>Добавить категорию</Button>
+                <Button size="sm" variant="outline">
+                    <SquarePen className="mr-1 h-4 w-4" />
+                    Редактировать
+                </Button>
             </DialogTrigger>
 
             <DialogContent>
                 <DialogHeader>
-                    <DialogTitle>Новая категория</DialogTitle>
+                    <DialogTitle>Редактировать подкатегорию</DialogTitle>
                 </DialogHeader>
 
                 <form onSubmit={submit} className="space-y-4">
+                    {/* Category */}
+                    <div>
+                        <Label>Категория</Label>
+                        <select
+                            className="w-full rounded-md border px-3 py-2 text-sm"
+                            value={data.category_id}
+                            onChange={(e) =>
+                                setData('category_id', Number(e.target.value))
+                            }
+                        >
+                            {categories.map((cat) => (
+                                <option key={cat.id} value={cat.id}>
+                                    {cat.name}
+                                </option>
+                            ))}
+                        </select>
+                        {errors.category_id && (
+                            <p className="text-sm text-destructive">
+                                {errors.category_id}
+                            </p>
+                        )}
+                    </div>
+
+                    {/* Name */}
                     <div>
                         <Label>Название</Label>
                         <Input
@@ -76,29 +100,7 @@ export function AddCategoryModal() {
                         )}
                     </div>
 
-                    <div>
-                        <Label>Иконка</Label>
-                        <Input
-                            type="file"
-                            accept="image/*"
-                            onChange={onFileChange}
-                        />
-
-                        {preview && (
-                            <img
-                                src={preview}
-                                alt="preview"
-                                className="mt-2 h-20 w-20 rounded border object-cover"
-                            />
-                        )}
-
-                        {errors.icon && (
-                            <p className="text-sm text-destructive">
-                                {errors.icon}
-                            </p>
-                        )}
-                    </div>
-
+                    {/* Status */}
                     <div className="flex items-center justify-between">
                         <Label>Активна</Label>
                         <Switch

@@ -15,6 +15,7 @@ import { type NavItem } from '@/types';
 import { Link } from '@inertiajs/react';
 import {
     Box,
+    Download,
     LayoutGrid,
     Menu,
     Rss,
@@ -23,10 +24,13 @@ import {
     ShoppingCart,
     Store,
     Users,
-    Download,
 } from 'lucide-react';
 
+import brand from '@/routes/admin/brand';
 import category from '@/routes/admin/category';
+import childCategory from '@/routes/admin/child-category';
+import product from '@/routes/admin/product';
+import subCategory from '@/routes/admin/sub-category';
 import AppLogo from './app-logo';
 
 const mainNavItems: NavItem[] = [
@@ -49,26 +53,26 @@ const mainMenu: NavItem[] = [
             },
             {
                 title: 'Подкатегория',
-                href: '/sub-category',
+                href: subCategory.index(),
             },
             {
                 title: 'Дочерняя категория',
-                href: '/child-category',
+                href: childCategory.index(),
             },
         ],
     },
     {
         title: 'Товары',
-        href: '/#',
+        href: product.index(),
         icon: Box,
         children: [
             {
                 title: 'Бренды',
-                href: '/brand',
+                href: brand.index(),
             },
             {
                 title: 'Продукты',
-                href: '/products',
+                href: product.index(),
             },
             {
                 title: 'Продукты продавцов',

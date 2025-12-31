@@ -1,15 +1,15 @@
-import { AddCategoryModal } from '@/components/admin/add-category-modal';
+import { AddCategoryModal } from '@/components/admin/category/add-category-modal';
+import { CategoryStatusSwitch } from '@/components/admin/category/category-status-switch';
+import { DeleteCategoryDialog } from '@/components/admin/category/delete-category-dialog';
+import { EditCategoryModal } from '@/components/admin/category/edit-category-modal';
 import { Column, DataTable } from '@/components/datatable';
 import { Pagination } from '@/components/pagination';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import AppLayout from '@/layouts/app/admin/app-layout';
 import { dashboard } from '@/routes/admin';
 import category from '@/routes/admin/category';
 import type { BreadcrumbItem } from '@/types';
 import { Category } from '@/types/category';
 import { PaginatedResponse } from '@/types/pagination';
-import { router } from '@inertiajs/react';
 const breadcrumbs: BreadcrumbItem[] = [
     {
         title: 'Дашборд',
@@ -59,9 +59,10 @@ const AllCategories = ({ categories }: Props) => {
             key: 'status',
             label: 'Статус',
             render: (row) => (
-                <Badge variant={row.status ? 'default' : 'secondary'}>
-                    {row.status ? 'Активна' : 'Выключена'}
-                </Badge>
+                <CategoryStatusSwitch
+                    categoryId={row.id}
+                    initialStatus={row.status}
+                />
             ),
         },
         {
@@ -70,20 +71,15 @@ const AllCategories = ({ categories }: Props) => {
             className: 'text-right',
             render: (row) => (
                 <div className="flex justify-end gap-2">
-                    <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() =>
-                            router.visit(`/categories/${row.id}/edit`)
-                        }
-                    >
-                        Редактировать
-                    </Button>
+                    <EditCategoryModal categoryItem={row} />
+                    <DeleteCategoryDialog
+                        categoryId={row.id}
+                        categoryName={row.name}
+                    />
                 </div>
             ),
         },
     ];
-    console.log(categories);
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
             <div className="space-y-4">
