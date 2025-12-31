@@ -1,8 +1,15 @@
+import { AddCategoryModal } from '@/components/admin/add-category-modal';
+import { Column, DataTable } from '@/components/datatable';
+import { Pagination } from '@/components/pagination';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import AppLayout from '@/layouts/app/admin/app-layout';
 import { dashboard } from '@/routes/admin';
 import category from '@/routes/admin/category';
 import type { BreadcrumbItem } from '@/types';
-
+import { Category } from '@/types/category';
+import { PaginatedResponse } from '@/types/pagination';
+import { router } from '@inertiajs/react';
 const breadcrumbs: BreadcrumbItem[] = [
     {
         title: 'Дашборд',
@@ -13,22 +20,85 @@ const breadcrumbs: BreadcrumbItem[] = [
         href: category.index().url,
     },
 ];
-const AllCategories = () => {
+
+interface Props {
+    categories: PaginatedResponse<Category>;
+}
+
+const AllCategories = ({ categories }: Props) => {
+    const columns: Column<Category>[] = [
+        {
+            key: 'id',
+            label: 'ID',
+            className: 'w-[70px]',
+        },
+        {
+            key: 'name',
+            label: 'Название',
+        },
+        {
+            key: 'slug',
+            label: 'Slug',
+            className: 'text-muted-foreground text-sm',
+        },
+        {
+            key: 'icon',
+            label: 'Иконка',
+            render: (row) =>
+                row.icon ? (
+                    <img
+                        src={`/storage/${row.icon}`}
+                        alt={row.name}
+                        className="h-10 w-10 rounded object-cover"
+                    />
+                ) : (
+                    <span className="text-muted-foreground">—</span>
+                ),
+        },
+        {
+            key: 'status',
+            label: 'Статус',
+            render: (row) => (
+                <Badge variant={row.status ? 'default' : 'secondary'}>
+                    {row.status ? 'Активна' : 'Выключена'}
+                </Badge>
+            ),
+        },
+        {
+            key: 'actions',
+            label: '',
+            className: 'text-right',
+            render: (row) => (
+                <div className="flex justify-end gap-2">
+                    <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() =>
+                            router.visit(`/categories/${row.id}/edit`)
+                        }
+                    >
+                        Редактировать
+                    </Button>
+                </div>
+            ),
+        },
+    ];
+    console.log(categories);
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <div>
-                Lorem ipsum dolor sit amet, consectetur adipisicing elit. Ab
-                aliquid delectus dolore eius eos eveniet exercitationem fuga
-                fugiat hic illum laborum maiores natus neque nisi odio pariatur
-                quaerat quas quia, quidem repellendus, reprehenderit sapiente
-                sequi tempore vero, vitae! Aliquid, aperiam asperiores
-                aspernatur assumenda consequatur cum deserunt dolor eius hic
-                laboriosam nisi non, optio quae, quam quibusdam recusandae saepe
-                sit tempora ullam ut! Eius, laborum magnam magni molestiae nemo
-                nulla odit praesentium quibusdam, quos sapiente tenetur
-                voluptas! Aut consequuntur dignissimos error illo numquam vitae.
-                Aliquam assumenda dolor, dolorum earum eligendi fugit odio odit
-                quasi quisquam quo recusandae totam ut veniam vero.
+            <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                    <h1 className="text-xl font-semibold">Категории</h1>
+                    <AddCategoryModal />
+                </div>
+                <DataTable data={categories.data} columns={columns} />
+                <div className="flex justify-end gap-2">
+                    <Pagination
+                        currentPage={categories.current_page}
+                        lastPage={categories.last_page}
+                        path={categories.path}
+                    />
+                </div>
             </div>
         </AppLayout>
     );
