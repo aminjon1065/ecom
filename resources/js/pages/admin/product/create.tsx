@@ -51,7 +51,7 @@ export default function CreateProduct({
         category_id: '',
         sub_category_id: '',
         child_category_id: '',
-        brand_id: '',
+        brand_id: brands.length ? String(brands[0].id) : '',
         qty: 0,
         sku: '',
         price: '',
@@ -102,10 +102,10 @@ export default function CreateProduct({
                     <CardHeader>
                         <CardTitle>Основная информация</CardTitle>
                         <CardDescription>
-                            Название, код и складской номер продукта
+                            Название, код, кол-во и складской номер продукта
                         </CardDescription>
                     </CardHeader>
-                    <CardContent className="grid gap-4 md:grid-cols-3">
+                    <CardContent className="grid gap-4 md:grid-cols-2">
                         <div className="space-y-2">
                             <Label htmlFor={'name'}>Название</Label>
                             <Input
@@ -117,23 +117,40 @@ export default function CreateProduct({
                             />
                         </div>
 
-                        <div className="space-y-2">
-                            <Label htmlFor={'code'}>Код</Label>
-                            <Input
-                                id={'code'}
-                                value={data.code}
-                                onChange={(e) =>
-                                    setData('code', e.target.value)
-                                }
-                            />
-                        </div>
-                        <div className="space-y-2">
-                            <Label htmlFor={'sku'}>Складской номер</Label>
-                            <Input
-                                id={'sku'}
-                                value={data.sku}
-                                onChange={(e) => setData('sku', e.target.value)}
-                            />
+                        <div className="w-full justify-between space-x-2 md:flex">
+                            <div className="w-full space-y-2">
+                                <Label htmlFor={'code'}>Код</Label>
+                                <Input
+                                    id={'code'}
+                                    value={data.code}
+                                    onChange={(e) =>
+                                        setData('code', e.target.value)
+                                    }
+                                />
+                            </div>
+                            <div className="w-full space-y-2">
+                                <Label htmlFor={'sku'}>Складской номер</Label>
+                                <Input
+                                    id={'sku'}
+                                    value={data.sku}
+                                    onChange={(e) =>
+                                        setData('sku', e.target.value)
+                                    }
+                                />
+                            </div>
+                            <div className="w-full space-y-2">
+                                <Label htmlFor={'qty'}>
+                                    Количество на складе
+                                </Label>
+                                <Input
+                                    id={'qty'}
+                                    type={'number'}
+                                    value={data.qty}
+                                    onChange={(e) =>
+                                        setData('qty', Number(e.target.value))
+                                    }
+                                />
+                            </div>
                         </div>
                     </CardContent>
                 </Card>
@@ -193,7 +210,10 @@ export default function CreateProduct({
                             </SelectContent>
                         </Select>
 
-                        <Select onValueChange={(v) => setData('brand_id', v)}>
+                        <Select
+                            value={data.brand_id}
+                            onValueChange={(v) => setData('brand_id', v)}
+                        >
                             <SelectTrigger>
                                 <SelectValue placeholder="Бренд" />
                             </SelectTrigger>
