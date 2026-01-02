@@ -1,9 +1,11 @@
+import { Editor } from '@/components/blocks/editor-00/editor';
 import AppLayout from '@/layouts/app/admin/app-layout';
 import { Brand } from '@/types/brand';
 import { Category } from '@/types/category';
 import { ChildCategory } from '@/types/child-category';
 import { SubCategory } from '@/types/sub-category';
 import { useForm } from '@inertiajs/react';
+import { SerializedEditorState } from 'lexical';
 import React, { useMemo, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
@@ -33,6 +35,35 @@ interface Props {
     childCategories: ChildCategory[];
     brands: Brand[];
 }
+const initialValue = {
+    root: {
+        children: [
+            {
+                children: [
+                    {
+                        detail: 0,
+                        format: 0,
+                        mode: 'normal',
+                        style: '',
+                        text: ' ',
+                        type: 'text',
+                        version: 1,
+                    },
+                ],
+                direction: 'ltr',
+                format: '',
+                indent: 0,
+                type: 'paragraph',
+                version: 1,
+            },
+        ],
+        direction: 'ltr',
+        format: '',
+        indent: 0,
+        type: 'root',
+        version: 1,
+    },
+} as unknown as SerializedEditorState;
 
 export default function CreateProduct({
     categories,
@@ -42,7 +73,6 @@ export default function CreateProduct({
 }: Props) {
     const [thumbPreview, setThumbPreview] = useState<string | null>(null);
     const [galleryPreview, setGalleryPreview] = useState<string[]>([]);
-
     const { data, setData, post, processing } = useForm({
         name: '',
         code: '',
@@ -60,7 +90,7 @@ export default function CreateProduct({
         offer_start_date: null as string | null,
         offer_end_date: null as string | null,
         short_description: '',
-        long_description: '',
+        long_description: JSON.stringify(initialValue),
         video_link: '',
         first_source_link: '',
         second_source_link: '',
@@ -295,8 +325,8 @@ export default function CreateProduct({
 
                 <Card>
                     <CardTitle>Описание продукта</CardTitle>
-                    <CardContent className="flex items-center justify-between">
-                        <div className="space-y-2 w-full">
+                    <CardContent className="flex flex-col items-center justify-between space-y-4">
+                        <div className="w-full space-y-2">
                             <Label htmlFor={'short_description'}>
                                 Короткое описание
                             </Label>
@@ -305,6 +335,22 @@ export default function CreateProduct({
                                 value={data.short_description}
                                 onChange={(e) =>
                                     setData('short_description', e.target.value)
+                                }
+                            />
+                        </div>
+                        <div className="w-full">
+                            <Label htmlFor={'short_description'}>
+                                Полное описание
+                            </Label>
+                            <Editor
+                                editorSerializedState={JSON.parse(
+                                    data.long_description,
+                                )}
+                                onSerializedChange={(value) =>
+                                    setData(
+                                        'long_description',
+                                        JSON.stringify(value),
+                                    )
                                 }
                             />
                         </div>
