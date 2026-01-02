@@ -322,9 +322,10 @@ export default function CreateProduct({
                         </div>
                     </CardContent>
                 </Card>
-
                 <Card>
-                    <CardTitle>Описание продукта</CardTitle>
+                    <CardHeader>
+                        <CardTitle>Описание продукта</CardTitle>
+                    </CardHeader>
                     <CardContent className="flex flex-col items-center justify-between space-y-4">
                         <div className="w-full space-y-2">
                             <Label htmlFor={'short_description'}>
@@ -435,7 +436,7 @@ export default function CreateProduct({
                 </Card>
 
                 <div className="flex justify-end">
-                    <Button size="lg" disabled={processing}>
+                    <Button size="lg" disabled={processing} type={'submit'}>
                         Сохранить продукт
                     </Button>
                 </div>
