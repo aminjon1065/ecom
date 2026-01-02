@@ -293,6 +293,24 @@ export default function CreateProduct({
                     </CardContent>
                 </Card>
 
+                <Card>
+                    <CardTitle>Описание продукта</CardTitle>
+                    <CardContent className="flex items-center justify-between">
+                        <div className="space-y-2 w-full">
+                            <Label htmlFor={'short_description'}>
+                                Короткое описание
+                            </Label>
+                            <Input
+                                id={'short_description'}
+                                value={data.short_description}
+                                onChange={(e) =>
+                                    setData('short_description', e.target.value)
+                                }
+                            />
+                        </div>
+                    </CardContent>
+                </Card>
+
                 {/* MEDIA */}
                 <Card>
                     <CardHeader>
