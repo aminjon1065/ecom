@@ -112,16 +112,19 @@ class Product extends Model
     ];
 
     protected $casts = [
-        'code' => 'integer',
+        'price' => 'float',
+        'cost_price' => 'float',
+        'offer_price' => 'float',
         'qty' => 'integer',
         'status' => 'boolean',
         'is_approved' => 'boolean',
-        'price' => 'decimal',
-        'cost_price' => 'double',
-        'offer_price' => 'decimal',
         'offer_start_date' => 'date',
-        'offer_end_date' => 'date'
+        'offer_end_date' => 'date',
+        'long_description' => 'array',
+        'gallery' => 'array',
     ];
+
+
 
     public function category(): BelongsTo
     {

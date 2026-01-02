@@ -3,9 +3,11 @@
 namespace App\Http\Controllers\Admin\Product;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\StoreProductRequest;
 use App\Models\Brand;
 use App\Models\Category;
 use App\Models\ChildCategory;
+use App\Models\Product;
 use App\Models\SubCategory;
 use Inertia\Inertia;
 
@@ -25,5 +27,34 @@ class ProductController extends Controller
             'childCategories' => ChildCategory::select('id', 'name', 'sub_category_id')->get(),
             'brands' => Brand::select('id', 'name')->where('status', true)->get(),
         ]);
+    }
+
+    public function store(StoreProductRequest $request): \Illuminate\Http\RedirectResponse
+    {
+        $data = $request->validated();
+
+        // THUMB
+        if ($request->hasFile('thumb_image')) {
+            $data['thumb_image'] = $request->file('thumb_image')
+                ->store('products/thumbs', 'public');
+        }
+
+        // GALLERY
+        if ($request->hasFile('gallery')) {
+            $data['gallery'] = collect($request->file('gallery'))
+                ->map(fn($file) => $file->store('products/gallery', 'public'))
+                ->toArray();
+        }
+
+        try {
+            $data['long_description'] = json_decode($data['long_description'], true, 512, JSON_THROW_ON_ERROR);
+        } catch (\JsonException $e) {
+            \Log::error($e->getMessage());
+        }
+
+        Product::create($data);
+        return redirect()
+            ->back(201)
+            ->with('success', 'Продукт создан');
     }
 }

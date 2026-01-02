@@ -5,8 +5,7 @@ import { Category } from '@/types/category';
 import { ChildCategory } from '@/types/child-category';
 import { SubCategory } from '@/types/sub-category';
 import { useForm } from '@inertiajs/react';
-import { SerializedEditorState } from 'lexical';
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -27,6 +26,8 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
+import { Textarea } from '@/components/ui/textarea';
+import { initialValue } from '@/pages/editor-00';
 import product from '@/routes/admin/product';
 
 interface Props {
@@ -35,35 +36,13 @@ interface Props {
     childCategories: ChildCategory[];
     brands: Brand[];
 }
-const initialValue = {
-    root: {
-        children: [
-            {
-                children: [
-                    {
-                        detail: 0,
-                        format: 0,
-                        mode: 'normal',
-                        style: '',
-                        text: ' ',
-                        type: 'text',
-                        version: 1,
-                    },
-                ],
-                direction: 'ltr',
-                format: '',
-                indent: 0,
-                type: 'paragraph',
-                version: 1,
-            },
-        ],
-        direction: 'ltr',
-        format: '',
-        indent: 0,
-        type: 'root',
-        version: 1,
-    },
-} as unknown as SerializedEditorState;
+
+const productTypes = [
+    { name: 'Топ' },
+    { name: 'Рекомендуемый' },
+    { name: 'Новый' },
+    { name: 'Лучший' },
+];
 
 export default function CreateProduct({
     categories,
@@ -72,10 +51,9 @@ export default function CreateProduct({
     brands,
 }: Props) {
     const [thumbPreview, setThumbPreview] = useState<string | null>(null);
-    const [galleryPreview, setGalleryPreview] = useState<string[]>([]);
     const { data, setData, post, processing } = useForm({
         name: '',
-        code: '',
+        code: 0,
         thumb_image: null as File | null,
         gallery: [] as File[],
         category_id: '',
@@ -84,9 +62,9 @@ export default function CreateProduct({
         brand_id: brands.length ? String(brands[0].id) : '',
         qty: 0,
         sku: '',
-        price: '',
-        cost_price: '',
-        offer_price: '',
+        price: 0,
+        cost_price: 0,
+        offer_price: 0,
         offer_start_date: null as string | null,
         offer_end_date: null as string | null,
         short_description: '',
@@ -96,8 +74,15 @@ export default function CreateProduct({
         second_source_link: '',
         seo_title: '',
         seo_description: '',
+        is_approved: true,
         status: true,
+        product_type: 'Топ',
     });
+    useEffect(() => {
+        return () => {
+            if (thumbPreview) URL.revokeObjectURL(thumbPreview);
+        };
+    }, [thumbPreview]);
     const filteredSub = useMemo(
         () =>
             subCategories.filter(
@@ -154,7 +139,7 @@ export default function CreateProduct({
                                     id={'code'}
                                     value={data.code}
                                     onChange={(e) =>
-                                        setData('code', e.target.value)
+                                        setData('code', Number(e.target.value))
                                     }
                                 />
                             </div>
@@ -190,71 +175,123 @@ export default function CreateProduct({
                     <CardHeader>
                         <CardTitle>Категории и бренд</CardTitle>
                     </CardHeader>
-                    <CardContent className="grid gap-4 md:grid-cols-4">
-                        <Select
-                            onValueChange={(v) => setData('category_id', v)}
-                        >
-                            <SelectTrigger>
-                                <SelectValue placeholder="Категория" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {categories.map((c) => (
-                                    <SelectItem key={c.id} value={String(c.id)}>
-                                        {c.name}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
+                    <CardContent className="grid gap-4 md:grid-cols-5">
+                        <div className="space-y-2">
+                            <Label>Категория</Label>
+                            <Select
+                                onValueChange={(v) => {
+                                    setData('category_id', v);
+                                    setData('sub_category_id', '');
+                                    setData('child_category_id', '');
+                                }}
+                            >
+                                <SelectTrigger className={'w-full'}>
+                                    <SelectValue placeholder="Категория" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {categories.map((c) => (
+                                        <SelectItem
+                                            key={c.id}
+                                            value={String(c.id)}
+                                        >
+                                            {c.name}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div className="space-y-2">
+                            <Label>Подкатегория</Label>
+                            <Select
+                                disabled={!data.category_id}
+                                onValueChange={(v) => {
+                                    setData('sub_category_id', v);
+                                    setData('child_category_id', '');
+                                }}
+                            >
+                                <SelectTrigger className={'w-full'}>
+                                    <SelectValue placeholder="Подкатегория" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {filteredSub.map((s) => (
+                                        <SelectItem
+                                            key={s.id}
+                                            value={String(s.id)}
+                                        >
+                                            {s.name}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div className="space-y-2">
+                            <Label>Дочерняя категория</Label>
+                            <Select
+                                disabled={!data.sub_category_id}
+                                onValueChange={(v) =>
+                                    setData('child_category_id', v)
+                                }
+                            >
+                                <SelectTrigger className={'w-full'}>
+                                    <SelectValue placeholder="Дочерняя категория" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {filteredChild.map((c) => (
+                                        <SelectItem
+                                            key={c.id}
+                                            value={String(c.id)}
+                                        >
+                                            {c.name}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
 
-                        <Select
-                            disabled={!data.category_id}
-                            onValueChange={(v) => setData('sub_category_id', v)}
-                        >
-                            <SelectTrigger>
-                                <SelectValue placeholder="Подкатегория" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {filteredSub.map((s) => (
-                                    <SelectItem key={s.id} value={String(s.id)}>
-                                        {s.name}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-
-                        <Select
-                            disabled={!data.sub_category_id}
-                            onValueChange={(v) =>
-                                setData('child_category_id', v)
-                            }
-                        >
-                            <SelectTrigger>
-                                <SelectValue placeholder="Дочерняя категория" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {filteredChild.map((c) => (
-                                    <SelectItem key={c.id} value={String(c.id)}>
-                                        {c.name}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-
-                        <Select
-                            value={data.brand_id}
-                            onValueChange={(v) => setData('brand_id', v)}
-                        >
-                            <SelectTrigger>
-                                <SelectValue placeholder="Бренд" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {brands.map((b) => (
-                                    <SelectItem key={b.id} value={String(b.id)}>
-                                        {b.name}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
+                        <div className="w-full space-y-2">
+                            <Label>Бренд</Label>
+                            <Select
+                                value={data.brand_id}
+                                onValueChange={(v) => setData('brand_id', v)}
+                            >
+                                <SelectTrigger className={'w-full'}>
+                                    <SelectValue placeholder="Бренд" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {brands.map((b) => (
+                                        <SelectItem
+                                            key={b.id}
+                                            value={String(b.id)}
+                                        >
+                                            {b.name}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div className="w-full space-y-2">
+                            <Label>Тип продукта</Label>
+                            <Select
+                                value={data.product_type}
+                                onValueChange={(v) =>
+                                    setData('product_type', v)
+                                }
+                            >
+                                <SelectTrigger className={'w-full'}>
+                                    <SelectValue placeholder="Топ" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {productTypes.map((b) => (
+                                        <SelectItem
+                                            key={b.name}
+                                            value={String(b.name)}
+                                        >
+                                            {b.name}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
                     </CardContent>
                 </Card>
 
@@ -274,7 +311,7 @@ export default function CreateProduct({
                                 type={'number'}
                                 value={data.price}
                                 onChange={(e) =>
-                                    setData('price', e.target.value)
+                                    setData('price', Number(e.target.value))
                                 }
                             />
                         </div>
@@ -285,7 +322,10 @@ export default function CreateProduct({
                                 id={'cost_price'}
                                 value={data.cost_price}
                                 onChange={(e) =>
-                                    setData('cost_price', e.target.value)
+                                    setData(
+                                        'cost_price',
+                                        Number(e.target.value),
+                                    )
                                 }
                             />
                         </div>
@@ -296,7 +336,10 @@ export default function CreateProduct({
                                 id={'offer_price'}
                                 value={data.offer_price}
                                 onChange={(e) =>
-                                    setData('price', e.target.value)
+                                    setData(
+                                        'offer_price',
+                                        Number(e.target.value),
+                                    )
                                 }
                             />
                         </div>
@@ -340,7 +383,7 @@ export default function CreateProduct({
                             />
                         </div>
                         <div className="w-full">
-                            <Label htmlFor={'short_description'}>
+                            <Label htmlFor={'long_description'}>
                                 Полное описание
                             </Label>
                             <Editor
@@ -358,12 +401,45 @@ export default function CreateProduct({
                     </CardContent>
                 </Card>
 
+                <Card>
+                    <CardHeader>
+                        <CardTitle>
+                            SEO(Search Engine Optimization) - для поисковой
+                            оптимизации
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent className="flex flex-col items-center justify-between space-y-4">
+                        <div className="w-full space-y-2">
+                            <Label htmlFor={'seo_title'}>SEO Заголовок</Label>
+                            <Input
+                                id={'seo_title'}
+                                value={data.seo_title}
+                                onChange={(e) =>
+                                    setData('seo_title', e.target.value)
+                                }
+                            />
+                        </div>
+                        <div className="w-full">
+                            <Label htmlFor={'seo_description'}>
+                                Полное описание
+                            </Label>
+                            <Textarea
+                                id={'seo_description'}
+                                value={data.seo_description}
+                                onChange={(e) =>
+                                    setData('seo_description', e.target.value)
+                                }
+                            />
+                        </div>
+                    </CardContent>
+                </Card>
+
                 {/* MEDIA */}
                 <Card>
                     <CardHeader>
                         <CardTitle>Медиа</CardTitle>
                         <CardDescription>
-                            Основное изображение и галерея
+                            Основное изображение продукта(thumb image)
                         </CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
@@ -371,12 +447,19 @@ export default function CreateProduct({
                             <Label>Основное изображение</Label>
                             <Input
                                 type="file"
+                                accept={'image/*'}
                                 onChange={(e) => {
                                     const f = e.target.files?.[0];
-                                    if (f) {
-                                        setData('thumb_image', f);
-                                        setThumbPreview(URL.createObjectURL(f));
+                                    if (!f) return;
+
+                                    if (thumbPreview) {
+                                        URL.revokeObjectURL(thumbPreview);
                                     }
+
+                                    const previewUrl = URL.createObjectURL(f);
+
+                                    setData('thumb_image', f);
+                                    setThumbPreview(previewUrl);
                                 }}
                             />
                             {thumbPreview && (
@@ -386,35 +469,6 @@ export default function CreateProduct({
                                     alt={'Product img'}
                                 />
                             )}
-                        </div>
-
-                        <div className="space-y-2">
-                            <Label>Галерея</Label>
-                            <Input
-                                type="file"
-                                multiple
-                                onChange={(e) => {
-                                    const files = Array.from(
-                                        e.target.files || [],
-                                    );
-                                    setData('gallery', files);
-                                    setGalleryPreview(
-                                        files.map((f) =>
-                                            URL.createObjectURL(f),
-                                        ),
-                                    );
-                                }}
-                            />
-                            <div className="grid grid-cols-4 gap-2">
-                                {galleryPreview.map((src, i) => (
-                                    <img
-                                        key={i}
-                                        src={src}
-                                        className="h-24 rounded border object-cover"
-                                        alt={'Галерея'}
-                                    />
-                                ))}
-                            </div>
                         </div>
                     </CardContent>
                 </Card>
