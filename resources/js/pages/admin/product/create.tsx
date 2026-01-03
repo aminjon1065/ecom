@@ -451,13 +451,10 @@ export default function CreateProduct({
                                 onChange={(e) => {
                                     const f = e.target.files?.[0];
                                     if (!f) return;
-
                                     if (thumbPreview) {
                                         URL.revokeObjectURL(thumbPreview);
                                     }
-
                                     const previewUrl = URL.createObjectURL(f);
-
                                     setData('thumb_image', f);
                                     setThumbPreview(previewUrl);
                                 }}
@@ -475,17 +472,53 @@ export default function CreateProduct({
 
                 {/* STATUS */}
                 <Card>
-                    <CardContent className="flex items-center justify-between">
-                        <div>
-                            <CardTitle>Статус</CardTitle>
-                            <CardDescription>
-                                Показывать продукт в магазине
-                            </CardDescription>
+                    <CardHeader>
+                        <CardTitle>Статус и ссылки источников</CardTitle>
+                        <CardDescription>
+                            Показывать продукт в магазине, ссылка поставщиков
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent className="flex flex-col justify-between space-y-3">
+                        <div
+                            className={
+                                'flex items-center justify-between gap-2 rounded-md border p-3'
+                            }
+                        >
+                            <Label htmlFor={'status'}>Статус</Label>
+                            <Switch
+                                id={'status'}
+                                checked={data.status}
+                                onCheckedChange={(v) => setData('status', v)}
+                            />
                         </div>
-                        <Switch
-                            checked={data.status}
-                            onCheckedChange={(v) => setData('status', v)}
-                        />
+
+                        <div className={'space-y-2'}>
+                            <Label htmlFor={'first_source_link'}>
+                                Первый источник
+                            </Label>
+                            <Input
+                                id={'first_source_link'}
+                                value={data.first_source_link}
+                                onChange={(e) =>
+                                    setData('first_source_link', e.target.value)
+                                }
+                            />
+                        </div>
+                        <div className={'space-y-2'}>
+                            <Label htmlFor={'second_source_link'}>
+                                Вторый источник
+                            </Label>
+                            <Input
+                                id={'second_source_link'}
+                                value={data.second_source_link}
+                                onChange={(e) =>
+                                    setData(
+                                        'second_source_link',
+                                        e.target.value,
+                                    )
+                                }
+                            />
+                        </div>
                     </CardContent>
                 </Card>
 

@@ -38,6 +38,7 @@ class ProductController extends Controller
             $data['thumb_image'] = $request->file('thumb_image')
                 ->store('products/thumbs', 'public');
         }
+        $data['slug'] = \Str::slug($data['name']);
 
         // GALLERY
         if ($request->hasFile('gallery')) {
@@ -53,8 +54,6 @@ class ProductController extends Controller
         }
 
         Product::create($data);
-        return redirect()
-            ->back(201)
-            ->with('success', 'Продукт создан');
+        return redirect()->route('admin.product.index')->with('success', 'Продукт добавлен');
     }
 }
