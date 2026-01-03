@@ -120,8 +120,6 @@ class Product extends Model
         'is_approved' => 'boolean',
         'offer_start_date' => 'date',
         'offer_end_date' => 'date',
-        'long_description' => 'array',
-        'gallery' => 'array',
     ];
 
 

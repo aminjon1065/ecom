@@ -7,6 +7,7 @@ use \App\Http\Controllers\Admin\Category\CategoryController;
 use \App\Http\Controllers\Admin\Category\SubCategoryController;
 use \App\Http\Controllers\Admin\Category\ChildCategoryController;
 use \App\Http\Controllers\Admin\BrandController;
+use \App\Http\Controllers\Admin\ImportProductsController;
 
 Route::get('dashboard', function () {
     return Inertia::render('admin/dashboard');
@@ -34,3 +35,9 @@ Route::patch('/brand/{brand}/is_featured', [BrandController::class, 'toggleFeatu
 
 //Товары
 Route::resource('product', ProductController::class);
+
+
+//Импорт Товаров
+Route::get('/products/import', [ImportProductsController::class, 'page'])->name('products.import.page');
+Route::post('/products/import', [ImportProductsController::class, 'import'])
+    ->name('products.import');

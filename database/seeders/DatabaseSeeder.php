@@ -52,5 +52,6 @@ class DatabaseSeeder extends Seeder
             ]
         );
         $vendor->assignRole('vendor');
+        $this->call(VendorSeeder::class);
     }
 }

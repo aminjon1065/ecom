@@ -32,6 +32,7 @@ import childCategory from '@/routes/admin/child-category';
 import product from '@/routes/admin/product';
 import subCategory from '@/routes/admin/sub-category';
 import AppLogo from './app-logo';
+import products from '@/routes/admin/products';
 
 const mainNavItems: NavItem[] = [
     {
@@ -144,7 +145,7 @@ const mainMenu: NavItem[] = [
     },
     {
         title: 'Импорт',
-        href: '/orders',
+        href: products.import().url,
         icon: Download,
     },
 ];
