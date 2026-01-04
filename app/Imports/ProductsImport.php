@@ -122,7 +122,7 @@ class ProductsImport implements ToCollection, WithHeadingRow
 
                     'name' => $row['name'],
                     'slug' => \Str::slug($row['name']),
-                    'thumb_image' => 'products/default.png',
+                    'thumb_image' => $row['thumb_image'],
 
                     'category_id' => $category->id,
                     'sub_category_id' => $subCategory->id,

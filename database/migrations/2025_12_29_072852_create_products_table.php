@@ -25,7 +25,7 @@ return new class extends Migration {
             $table->text('short_description');
             $table->text('long_description');
             $table->text('video_link')->nullable();
-            $table->string('sku')->nullable()->unique();
+            $table->string('sku')->nullable();
             $table->decimal('price', 10, 2);
             $table->decimal('cost_price')->nullable();
             $table->decimal('offer_price', 10, 2)->nullable();

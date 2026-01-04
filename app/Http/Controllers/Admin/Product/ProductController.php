@@ -14,8 +14,9 @@ use Inertia\Inertia;
 class ProductController extends Controller
 {
 
-    public function index()
+    public function index(): \Inertia\Response
     {
+
         return Inertia::render('admin/product/index');
     }
 
