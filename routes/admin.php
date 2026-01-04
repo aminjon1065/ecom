@@ -35,7 +35,7 @@ Route::patch('/brand/{brand}/is_featured', [BrandController::class, 'toggleFeatu
 
 //Товары
 Route::resource('product', ProductController::class);
-
+Route::patch('/product/{product}/status', [ProductController::class, 'toggleStatus'])->name('product.toggle-status');
 
 //Импорт Товаров
 Route::get('/products/import', [ImportProductsController::class, 'page'])->name('products.import.page');

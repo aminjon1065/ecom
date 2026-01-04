@@ -9,15 +9,45 @@ use App\Models\Category;
 use App\Models\ChildCategory;
 use App\Models\Product;
 use App\Models\SubCategory;
+use Illuminate\Http\Request;
 use Inertia\Inertia;
 
 class ProductController extends Controller
 {
 
-    public function index(): \Inertia\Response
+    public function index(Request $request)
     {
+        $products = Product::query()
+            ->select([
+                'id',
+                'name',
+                'thumb_image',
+                'price',
+                'sku',
+                'qty',
+                'code',
+                'status',
+            ])
+            ->with([
+                'category:id,name',
+                'brand:id,name',
+            ])
+            ->latest()
+            ->paginate(10)
+            ->withQueryString();
 
-        return Inertia::render('admin/product/index');
+        return Inertia::render('admin/product/index', [
+            'products' => $products,
+        ]);
+    }
+
+    public function toggleStatus(Product $product): \Illuminate\Http\RedirectResponse
+    {
+        $product->update([
+            'status' => !$product->status,
+        ]);
+
+        return redirect()->back();
     }
 
     public function create(): \Inertia\Response
