@@ -15,7 +15,8 @@ use Inertia\Inertia;
 class ProductController extends Controller
 {
 
-    public function index(Request $request)
+
+    public function index(Request $request): \Inertia\Response
     {
         $products = Product::query()
             ->select([
@@ -27,17 +28,44 @@ class ProductController extends Controller
                 'qty',
                 'code',
                 'status',
+                'category_id',
+                'brand_id',
             ])
             ->with([
                 'category:id,name',
                 'brand:id,name',
             ])
+            ->when($request->search, function ($query, $search) {
+                $query->where(function ($q) use ($search) {
+                    $q->where('name', 'like', "%{$search}%")
+                        ->orWhere('code', 'like', "%{$search}%")
+                        ->orWhere('sku', 'like', "%{$search}%");
+                });
+            })
+            ->when($request->category_id, fn ($q, $v) =>
+            $q->where('category_id', $v)
+            )
+            ->when($request->brand_id, fn ($q, $v) =>
+            $q->where('brand_id', $v)
+            )
+            ->when(
+                $request->filled('status'),
+                fn ($q) => $q->where('status', $request->boolean('status'))
+            )
             ->latest()
             ->paginate(10)
             ->withQueryString();
 
         return Inertia::render('admin/product/index', [
             'products' => $products,
+            'filters' => $request->only([
+                'search',
+                'category_id',
+                'brand_id',
+                'status',
+            ]),
+            'categories' => Category::select('id', 'name')->get(),
+            'brands' => Brand::select('id', 'name')->get(),
         ]);
     }
 

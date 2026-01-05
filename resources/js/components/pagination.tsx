@@ -1,6 +1,6 @@
 import { Button } from '@/components/ui/button';
-import { router } from '@inertiajs/react';
 import { buildPages } from '@/lib/utils';
+import { router } from '@inertiajs/react';
 
 interface Props {
     currentPage: number;
@@ -14,7 +14,11 @@ export function Pagination({ currentPage, lastPage, path }: Props) {
     const pages = buildPages(currentPage, lastPage);
 
     function go(page: number) {
-        router.visit(`${path}?page=${page}`, {
+        const params = new URLSearchParams(window.location.search);
+
+        params.set('page', String(page));
+
+        router.visit(`${path}?${params.toString()}`, {
             preserveScroll: true,
             preserveState: true,
         });
