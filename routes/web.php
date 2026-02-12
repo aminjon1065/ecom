@@ -17,4 +17,3 @@ Route::middleware(['auth', 'verified', 'role:admin'])
     });
 require __DIR__ . '/client.php';
 require __DIR__ . '/vendor.php';
-require __DIR__ . '/client.php';

@@ -18,7 +18,6 @@ import {
     Download,
     LayoutGrid,
     Menu,
-    Rss,
     Send,
     Settings,
     ShoppingCart,
@@ -29,10 +28,19 @@ import {
 import brand from '@/routes/admin/brand';
 import category from '@/routes/admin/category';
 import childCategory from '@/routes/admin/child-category';
+import coupon from '@/routes/admin/coupon';
+import flashSale from '@/routes/admin/flash-sale';
+import order from '@/routes/admin/order';
 import product from '@/routes/admin/product';
-import subCategory from '@/routes/admin/sub-category';
-import AppLogo from './app-logo';
 import products from '@/routes/admin/products';
+import review from '@/routes/admin/review';
+import sellerProduct from '@/routes/admin/seller-product';
+import shippingRule from '@/routes/admin/shipping-rule';
+import slider from '@/routes/admin/slider';
+import subCategory from '@/routes/admin/sub-category';
+import subscriber from '@/routes/admin/subscriber';
+import user from '@/routes/admin/user';
+import AppLogo from './app-logo';
 
 const mainNavItems: NavItem[] = [
     {
@@ -77,69 +85,46 @@ const mainMenu: NavItem[] = [
             },
             {
                 title: 'Продукты продавцов',
-                href: '/seller-products',
+                href: sellerProduct.index(),
             },
             {
-                title: 'Оценка продукта',
-                href: '/reviews',
+                title: 'Отзывы',
+                href: review.index(),
             },
         ],
     },
     {
         title: 'Заказы',
-        href: '/orders',
+        href: order.index(),
         icon: ShoppingCart,
     },
     {
         title: 'Э-коммерция',
-        href: '/#',
+        href: flashSale.index(),
         icon: Store,
         children: [
             {
                 title: 'Распродажа',
-                href: '/flash-sale',
+                href: flashSale.index(),
             },
             {
                 title: 'Купоны',
-                href: '/coupons',
+                href: coupon.index(),
             },
             {
                 title: 'Правило доставки',
-                href: '/shipping-rule',
+                href: shippingRule.index(),
             },
         ],
     },
     {
         title: 'Управления сайтом',
-        href: '/#',
+        href: slider.index(),
         icon: Settings,
         children: [
             {
                 title: 'Слайдер',
-                href: '/slider',
-            },
-            {
-                title: 'О нас',
-                href: '/about',
-            },
-        ],
-    },
-    {
-        title: 'Блог',
-        href: '/#',
-        icon: Rss,
-        children: [
-            {
-                title: 'Категории',
-                href: '/blog-category',
-            },
-            {
-                title: 'Публикация',
-                href: '/post',
-            },
-            {
-                title: 'Комментарии',
-                href: '/blog-comments',
+                href: slider.index(),
             },
         ],
     },
@@ -153,12 +138,12 @@ const mainMenu: NavItem[] = [
 const footerNavItems: NavItem[] = [
     {
         title: 'Пользователи',
-        href: '/users',
+        href: user.index(),
         icon: Users,
     },
     {
         title: 'Рассылки',
-        href: '/subscribers',
+        href: subscriber.index(),
         icon: Send,
     },
 ];
