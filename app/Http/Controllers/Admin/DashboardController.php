@@ -69,6 +69,19 @@ class DashboardController extends Controller
             ->take(5)
             ->get(['id', 'product_id', 'user_id', 'review', 'rating', 'created_at']);
 
+        $vendorProducts = Product::whereNotNull('vendor_id')
+            ->with(['vendor.user:id,name', 'category:id,name'])
+            ->latest()
+            ->take(10)
+            ->get(['id', 'name', 'thumb_image', 'price', 'qty', 'vendor_id', 'category_id', 'is_approved', 'status', 'created_at']);
+
+        $vendorProductStats = [
+            'total' => Product::whereNotNull('vendor_id')->count(),
+            'approved' => Product::whereNotNull('vendor_id')->where('is_approved', true)->count(),
+            'pending' => Product::whereNotNull('vendor_id')->where('is_approved', false)->count(),
+            'active' => Product::whereNotNull('vendor_id')->where('status', true)->count(),
+        ];
+
         return Inertia::render('admin/dashboard', [
             'statistics' => $statistics,
             'orderStats' => $orderStats,
@@ -76,6 +89,8 @@ class DashboardController extends Controller
             'pendingProducts' => $pendingProducts,
             'recentOrders' => $recentOrders,
             'pendingReviews' => $pendingReviews,
+            'vendorProducts' => $vendorProducts,
+            'vendorProductStats' => $vendorProductStats,
         ]);
     }
 

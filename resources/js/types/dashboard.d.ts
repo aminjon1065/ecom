@@ -78,6 +78,34 @@ export interface PendingReview {
     };
 }
 
+export interface VendorProduct {
+    id: number;
+    name: string;
+    thumb_image: string;
+    price: number;
+    qty: number;
+    is_approved: boolean;
+    status: boolean;
+    created_at: string;
+    vendor: {
+        user: {
+            id: number;
+            name: string;
+        };
+    } | null;
+    category: {
+        id: number;
+        name: string;
+    } | null;
+}
+
+export interface VendorProductStats {
+    total: number;
+    approved: number;
+    pending: number;
+    active: number;
+}
+
 export interface DashboardProps {
     statistics: DashboardStatistics;
     orderStats: OrderStats;
@@ -85,4 +113,6 @@ export interface DashboardProps {
     pendingProducts: PendingProduct[];
     recentOrders: RecentOrder[];
     pendingReviews: PendingReview[];
+    vendorProducts: VendorProduct[];
+    vendorProductStats: VendorProductStats;
 }

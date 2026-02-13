@@ -1,12 +1,13 @@
 import AppLayout from '@/layouts/app/admin/app-layout';
 import { dashboard } from '@/routes/admin';
 import { type BreadcrumbItem } from '@/types';
-import { type DashboardProps, type PendingVendor, type PendingProduct, type RecentOrder } from '@/types/dashboard';
+import { type DashboardProps, type PendingVendor, type PendingProduct, type RecentOrder, type VendorProduct } from '@/types/dashboard';
 import { Head, router } from '@inertiajs/react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { DataTable, type Column } from '@/components/datatable';
+import { Switch } from '@/components/ui/switch';
 import {
     DollarSign,
     ShoppingCart,
@@ -16,6 +17,10 @@ import {
     TrendingUp,
     TrendingDown,
     Star,
+    Package,
+    CheckCircle,
+    Clock,
+    Activity,
 } from 'lucide-react';
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -60,6 +65,8 @@ export default function Dashboard({
     pendingProducts,
     recentOrders,
     pendingReviews,
+    vendorProducts,
+    vendorProductStats,
 }: DashboardProps) {
     const revenueTrend = statistics.yesterday_revenue > 0
         ? ((statistics.today_revenue - statistics.yesterday_revenue) / statistics.yesterday_revenue) * 100
@@ -236,6 +243,80 @@ export default function Dashboard({
         },
     ];
 
+    const vendorProductColumns: Column<VendorProduct>[] = [
+        {
+            key: 'thumb_image',
+            label: 'Фото',
+            render: (row) => (
+                <img
+                    src={row.thumb_image}
+                    alt={row.name}
+                    className="h-10 w-10 rounded object-cover"
+                />
+            ),
+        },
+        {
+            key: 'name',
+            label: 'Название',
+            render: (row) => (
+                <div className="max-w-[200px] truncate font-medium">{row.name}</div>
+            ),
+        },
+        {
+            key: 'vendor',
+            label: 'Продавец',
+            render: (row) => row.vendor?.user?.name ?? '—',
+        },
+        {
+            key: 'category',
+            label: 'Категория',
+            render: (row) => row.category?.name ?? '—',
+        },
+        {
+            key: 'price',
+            label: 'Цена',
+            render: (row) => `${formatCurrency(row.price)} сом.`,
+        },
+        {
+            key: 'qty',
+            label: 'Остаток',
+            render: (row) => (
+                <span className={row.qty < 5 ? 'font-medium text-red-600' : ''}>
+                    {row.qty}
+                </span>
+            ),
+        },
+        {
+            key: 'is_approved',
+            label: 'Одобрен',
+            render: (row) => (
+                <Switch
+                    checked={row.is_approved}
+                    onCheckedChange={() => {
+                        router.patch(`/admin/seller-products/${row.id}/approval`, {}, { preserveScroll: true });
+                    }}
+                />
+            ),
+        },
+        {
+            key: 'status',
+            label: 'Активен',
+            render: (row) => (
+                <Switch
+                    checked={row.status}
+                    onCheckedChange={() => {
+                        router.patch(`/admin/seller-products/${row.id}/status`, {}, { preserveScroll: true });
+                    }}
+                />
+            ),
+        },
+        {
+            key: 'created_at',
+            label: 'Дата',
+            render: (row) => formatDate(row.created_at),
+        },
+    ];
+
     const orderStatsTotal = Object.values(orderStats).reduce((a, b) => a + b, 0);
 
     return (
@@ -371,6 +452,69 @@ export default function Dashboard({
                         </CardContent>
                     </Card>
                 )}
+
+                {/* Vendor Products Section */}
+                <Card>
+                    <CardHeader className="flex flex-row items-center justify-between">
+                        <CardTitle className="flex items-center gap-2">
+                            <Package className="h-5 w-5" />
+                            Товары продавцов
+                        </CardTitle>
+                        <a
+                            href="/admin/seller-products"
+                            className="text-sm text-primary hover:underline"
+                        >
+                            Все товары →
+                        </a>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        <div className="grid gap-3 sm:grid-cols-4">
+                            <div className="flex items-center gap-3 rounded-lg border p-3">
+                                <div className="rounded-md bg-blue-100 p-2 dark:bg-blue-900">
+                                    <Package className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                                </div>
+                                <div>
+                                    <p className="text-sm text-muted-foreground">Всего</p>
+                                    <p className="text-lg font-bold">{vendorProductStats.total}</p>
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-3 rounded-lg border p-3">
+                                <div className="rounded-md bg-green-100 p-2 dark:bg-green-900">
+                                    <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-400" />
+                                </div>
+                                <div>
+                                    <p className="text-sm text-muted-foreground">Одобрено</p>
+                                    <p className="text-lg font-bold">{vendorProductStats.approved}</p>
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-3 rounded-lg border p-3">
+                                <div className="rounded-md bg-yellow-100 p-2 dark:bg-yellow-900">
+                                    <Clock className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
+                                </div>
+                                <div>
+                                    <p className="text-sm text-muted-foreground">На модерации</p>
+                                    <p className="text-lg font-bold">{vendorProductStats.pending}</p>
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-3 rounded-lg border p-3">
+                                <div className="rounded-md bg-purple-100 p-2 dark:bg-purple-900">
+                                    <Activity className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+                                </div>
+                                <div>
+                                    <p className="text-sm text-muted-foreground">Активных</p>
+                                    <p className="text-lg font-bold">{vendorProductStats.active}</p>
+                                </div>
+                            </div>
+                        </div>
+                        {vendorProducts.length > 0 ? (
+                            <DataTable data={vendorProducts} columns={vendorProductColumns} />
+                        ) : (
+                            <p className="py-4 text-center text-sm text-muted-foreground">
+                                Товары от продавцов пока отсутствуют
+                            </p>
+                        )}
+                    </CardContent>
+                </Card>
 
                 {/* Pending Vendors */}
                 {pendingVendors.length > 0 && (
