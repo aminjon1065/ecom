@@ -34,6 +34,14 @@ class ProductController extends Controller
             $query->where('category_id', $categoryId);
         }
 
+        if ($subCategoryId = $request->input('sub_category')) {
+            $query->where('sub_category_id', $subCategoryId);
+        }
+
+        if ($childCategoryId = $request->input('child_category')) {
+            $query->where('child_category_id', $childCategoryId);
+        }
+
         if ($brandId = $request->input('brand')) {
             $query->where('brand_id', $brandId);
         }
@@ -70,7 +78,7 @@ class ProductController extends Controller
             'products' => $products,
             'categories' => $categories,
             'brands' => $brands,
-            'filters' => $request->only(['search', 'category', 'brand', 'min_price', 'max_price', 'sort']),
+            'filters' => $request->only(['search', 'category', 'sub_category', 'child_category', 'brand', 'min_price', 'max_price', 'sort']),
         ]);
     }
 

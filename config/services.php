@@ -35,4 +35,9 @@ return [
         ],
     ],
 
+    'telegram' => [
+        'bot_username' => env('TELEGRAM_BOT_USERNAME', 'NeutronEcomBot'),
+        'bot_token' => env('TELEGRAM_BOT_TOKEN'),
+    ],
+
 ];

@@ -74,6 +74,8 @@ class User extends Authenticatable
         'email',
         'avatar',
         'phone',
+        'telegram_id',
+        'telegram_username',
         'is_active',
         'password',
     ];
@@ -115,5 +117,23 @@ class User extends Authenticatable
         return $this->hasMany(ProductReview::class);
     }
 
+    public function carts(): HasMany
+    {
+        return $this->hasMany(Cart::class);
+    }
 
+    public function wishlists(): HasMany
+    {
+        return $this->hasMany(Wishlist::class);
+    }
+
+    public function addresses(): HasMany
+    {
+        return $this->hasMany(UserAddress::class);
+    }
+
+    public function orders(): HasMany
+    {
+        return $this->hasMany(Order::class);
+    }
 }

@@ -2,6 +2,9 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\Cart;
+use App\Models\Category;
+use App\Models\Wishlist;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
@@ -48,6 +51,12 @@ class HandleInertiaRequests extends Middleware
             ],
             
             'sidebarOpen' => !$request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
+            'cartCount' => $request->user() ? Cart::where('user_id', $request->user()->id)->count() : 0,
+            'wishlistCount' => $request->user() ? Wishlist::where('user_id', $request->user()->id)->count() : 0,
+            'categories' => fn () => Category::where('status', true)
+                ->with(['subCategories' => fn ($q) => $q->where('status', true)
+                    ->with(['childCategory' => fn ($q2) => $q2->where('status', true)])])
+                ->get(['id', 'name', 'slug', 'icon']),
         ];
     }
 }
