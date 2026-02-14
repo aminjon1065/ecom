@@ -29,7 +29,7 @@ class HomeController extends Controller
 
         $newProducts = Product::where('status', true)
             ->where('is_approved', true)
-            ->where('product_type', 'Новый')
+            ->where('product_type', 'new')
             ->with('category:id,name')
             ->withAvg('reviews', 'rating')
             ->withCount('reviews')
@@ -39,7 +39,7 @@ class HomeController extends Controller
 
         $topProducts = Product::where('status', true)
             ->where('is_approved', true)
-            ->where('product_type', 'Топ')
+            ->where('product_type', 'top')
             ->with('category:id,name')
             ->withAvg('reviews', 'rating')
             ->withCount('reviews')
@@ -49,7 +49,7 @@ class HomeController extends Controller
 
         $bestProducts = Product::where('status', true)
             ->where('is_approved', true)
-            ->where('product_type', 'Лучший')
+            ->where('product_type', 'best')
             ->with('category:id,name')
             ->withAvg('reviews', 'rating')
             ->withCount('reviews')
