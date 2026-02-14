@@ -1,4 +1,6 @@
 import AppLogo from '@/components/app-logo';
+import { MobileBottomNav } from '@/components/client/mobile-bottom-nav';
+import { MobileCatalogOverlay } from '@/components/client/mobile-catalog-overlay';
 import { NavMain } from '@/components/client/NavMain';
 import { ModeToggle } from '@/components/mode-toggle';
 import { Button } from '@/components/ui/button';
@@ -24,6 +26,8 @@ type AppHeaderLayoutProps = {
 const AppHeaderLayout = ({ children }: AppHeaderLayoutProps) => {
     const { auth, cartCount, wishlistCount } = usePage<SharedData & { cartCount?: number; wishlistCount?: number }>().props;
     const [searchQuery, setSearchQuery] = useState('');
+    const [catalogOpen, setCatalogOpen] = useState(false);
+    const [mobileSearchQuery, setMobileSearchQuery] = useState('');
 
     const handleSearch = (e: React.FormEvent) => {
         e.preventDefault();
@@ -32,17 +36,28 @@ const AppHeaderLayout = ({ children }: AppHeaderLayoutProps) => {
         }
     };
 
+    const handleMobileSearch = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (mobileSearchQuery.trim()) {
+            router.get('/products', { search: mobileSearchQuery });
+            setCatalogOpen(false);
+        }
+    };
+
     return (
         <div className="flex min-h-screen flex-col justify-between">
+            {/* Header */}
             <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-backdrop-blur:bg-background/60">
                 <div className="mx-auto flex h-14 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
                     <Link href="/" className="flex shrink-0 items-center gap-2 font-semibold">
                         <AppLogo />
                     </Link>
 
+                    {/* Desktop: Catalog mega menu */}
                     <NavMain />
 
-                    <form onSubmit={handleSearch} className="relative hidden w-full  md:block">
+                    {/* Desktop: Search bar */}
+                    <form onSubmit={handleSearch} className="relative hidden w-full md:block">
                         <Input
                             placeholder="Поиск товаров..."
                             className="h-9 pr-8"
@@ -54,7 +69,8 @@ const AppHeaderLayout = ({ children }: AppHeaderLayoutProps) => {
                         </button>
                     </form>
 
-                    <div className="flex items-center gap-1">
+                    {/* Desktop: Action buttons */}
+                    <div className="hidden items-center gap-1 md:flex">
                         {auth.user && (
                             <>
                                 <Tooltip>
@@ -109,12 +125,41 @@ const AppHeaderLayout = ({ children }: AppHeaderLayoutProps) => {
                             </Link>
                         )}
                     </div>
+
+                    {/* Mobile: settings + login */}
+                    <div className="flex items-center gap-1 md:hidden">
+                        <ModeToggle />
+                        {!auth.user && (
+                            <Link href={login().url}>
+                                <Button size="sm" variant="ghost" className="gap-1 text-xs">
+                                    <LogIn className="h-4 w-4" />
+                                </Button>
+                            </Link>
+                        )}
+                    </div>
+                </div>
+
+                {/* Mobile: Search bar below header */}
+                <div className="border-t px-4 py-2 md:hidden">
+                    <form onSubmit={handleMobileSearch} className="relative">
+                        <Input
+                            placeholder="Искать товары..."
+                            className="h-9 pr-9"
+                            value={mobileSearchQuery}
+                            onChange={(e) => setMobileSearchQuery(e.target.value)}
+                        />
+                        <button type="submit" className="absolute top-1/2 right-2.5 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+                            <Search className="h-4 w-4" />
+                        </button>
+                    </form>
                 </div>
             </header>
 
-            <main className="flex-1">{children}</main>
+            {/* Main content with bottom padding for mobile nav */}
+            <main className="flex-1 pb-16 md:pb-0">{children}</main>
 
-            <footer className="border-t bg-muted/40">
+            {/* Footer - hidden on mobile (bottom nav takes over) */}
+            <footer className="hidden border-t bg-muted/40 md:block">
                 <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
                     <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
                         <div>
@@ -152,6 +197,12 @@ const AppHeaderLayout = ({ children }: AppHeaderLayoutProps) => {
                     </div>
                 </div>
             </footer>
+
+            {/* Mobile bottom navigation */}
+            <MobileBottomNav onCatalogOpen={() => setCatalogOpen(!catalogOpen)} catalogOpen={catalogOpen} />
+
+            {/* Mobile catalog overlay */}
+            <MobileCatalogOverlay open={catalogOpen} onClose={() => setCatalogOpen(false)} />
         </div>
     );
 };

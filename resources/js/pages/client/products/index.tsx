@@ -1,8 +1,7 @@
 import { Head, router } from '@inertiajs/react';
-import { useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import AppHeaderLayout from '@/layouts/app/client/app-header-layout';
 import { ProductCard } from '@/components/client/product-card';
-import { Pagination } from '@/components/pagination';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -15,18 +14,18 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Search, SlidersHorizontal, X } from 'lucide-react';
-
-interface Review {
-  rating: number;
-}
+import { Loader2, Search, SlidersHorizontal, X } from 'lucide-react';
 
 interface Product {
   id: number;
   name: string;
   slug: string;
+  thumb_image: string;
   price: number;
-  image_url?: string;
+  offer_price?: number | null;
+  offer_start_date?: string | null;
+  offer_end_date?: string | null;
+  product_type?: string | null;
   category?: {
     id: number;
     name: string;
@@ -35,7 +34,7 @@ interface Product {
     id: number;
     name: string;
   };
-  reviews_avg_rating?: number;
+  reviews_avg_rating?: number | null;
   reviews_count?: number;
 }
 
@@ -60,38 +59,66 @@ interface Filters {
   sort?: string;
 }
 
-interface PaginationLink {
-  url: string | null;
-  label: string;
-  active: boolean;
-}
-
-interface PaginatedProducts {
-  data: Product[];
-  links: PaginationLink[];
+interface ProductsMeta {
   current_page: number;
   last_page: number;
-  per_page: number;
   total: number;
 }
 
 interface Props {
-  products: PaginatedProducts;
+  products: Product[];
+  productsMeta: ProductsMeta;
   categories: Category[];
   brands: Brand[];
   filters: Filters;
 }
 
-export default function ProductsIndex({ products, categories, brands, filters }: Props) {
+export default function ProductsIndex({ products, productsMeta, categories, brands, filters }: Props) {
   const [searchQuery, setSearchQuery] = useState(filters.search || '');
   const [minPrice, setMinPrice] = useState(filters.min_price?.toString() || '');
   const [maxPrice, setMaxPrice] = useState(filters.max_price?.toString() || '');
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const loadMoreRef = useRef<HTMLDivElement>(null);
+
+  const hasMore = productsMeta.current_page < productsMeta.last_page;
+
+  const loadMore = useCallback(() => {
+    if (loading || !hasMore) return;
+
+    setLoading(true);
+    router.get(
+      '/products',
+      { ...filters, page: productsMeta.current_page + 1 },
+      {
+        preserveState: true,
+        preserveScroll: true,
+        only: ['products', 'productsMeta'],
+        onFinish: () => setLoading(false),
+      },
+    );
+  }, [loading, hasMore, filters, productsMeta.current_page]);
+
+  useEffect(() => {
+    const el = loadMoreRef.current;
+    if (!el) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          loadMore();
+        }
+      },
+      { rootMargin: '200px' },
+    );
+
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [loadMore]);
 
   const handleFilterChange = (newFilters: Partial<Filters>) => {
     const updatedFilters = { ...filters, ...newFilters };
 
-    // Remove empty filters
     Object.keys(updatedFilters).forEach(key => {
       const value = updatedFilters[key as keyof Filters];
       if (value === '' || value === null || value === undefined) {
@@ -100,8 +127,9 @@ export default function ProductsIndex({ products, categories, brands, filters }:
     });
 
     router.get('/products', updatedFilters, {
-      preserveState: true,
-      preserveScroll: true,
+      preserveState: false,
+      preserveScroll: false,
+      reset: ['products'],
     });
   };
 
@@ -137,7 +165,7 @@ export default function ProductsIndex({ products, categories, brands, filters }:
     setSearchQuery('');
     setMinPrice('');
     setMaxPrice('');
-    router.get('/products', {}, { preserveState: true });
+    router.get('/products', {}, { preserveState: false });
   };
 
   const activeFiltersCount = [
@@ -150,7 +178,6 @@ export default function ProductsIndex({ products, categories, brands, filters }:
 
   const FilterSidebar = () => (
     <div className="space-y-6">
-      {/* Categories Filter */}
       <Card>
         <CardHeader>
           <CardTitle className="text-base">Категории</CardTitle>
@@ -179,7 +206,6 @@ export default function ProductsIndex({ products, categories, brands, filters }:
         </CardContent>
       </Card>
 
-      {/* Brands Filter */}
       <Card>
         <CardHeader>
           <CardTitle className="text-base">Бренды</CardTitle>
@@ -208,7 +234,6 @@ export default function ProductsIndex({ products, categories, brands, filters }:
         </CardContent>
       </Card>
 
-      {/* Price Range Filter */}
       <Card>
         <CardHeader>
           <CardTitle className="text-base">Цена</CardTitle>
@@ -253,7 +278,6 @@ export default function ProductsIndex({ products, categories, brands, filters }:
         </CardContent>
       </Card>
 
-      {/* Clear Filters */}
       {activeFiltersCount > 0 && (
         <Button
           onClick={clearFilters}
@@ -272,7 +296,6 @@ export default function ProductsIndex({ products, categories, brands, filters }:
       <Head title="Каталог" />
 
       <div className="container mx-auto px-4 py-8">
-        {/* Search and Sort Bar */}
         <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <form onSubmit={handleSearchSubmit} className="flex-1 max-w-md">
             <div className="relative">
@@ -288,7 +311,6 @@ export default function ProductsIndex({ products, categories, brands, filters }:
           </form>
 
           <div className="flex items-center gap-3">
-            {/* Mobile Filter Toggle */}
             <Button
               variant="outline"
               size="sm"
@@ -304,7 +326,6 @@ export default function ProductsIndex({ products, categories, brands, filters }:
               )}
             </Button>
 
-            {/* Sort Dropdown */}
             <div className="flex items-center gap-2">
               <Label className="text-sm text-muted-foreground whitespace-nowrap hidden md:inline">
                 Сортировка:
@@ -313,7 +334,7 @@ export default function ProductsIndex({ products, categories, brands, filters }:
                 value={filters.sort || 'latest'}
                 onValueChange={(value) => handleFilterChange({ sort: value })}
               >
-                <SelectTrigger className="w-[180px]">
+                <SelectTrigger className="w-45">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -328,40 +349,34 @@ export default function ProductsIndex({ products, categories, brands, filters }:
         </div>
 
         <div className="flex flex-col md:flex-row gap-6">
-          {/* Sidebar - Desktop */}
-          <aside className="hidden md:block w-64 flex-shrink-0">
+          <aside className="hidden md:block w-64 shrink-0">
             <FilterSidebar />
           </aside>
 
-          {/* Sidebar - Mobile */}
           {mobileFiltersOpen && (
             <div className="md:hidden mb-6">
               <FilterSidebar />
             </div>
           )}
 
-          {/* Main Content */}
           <div className="flex-1">
-            {/* Results Count */}
             <div className="mb-4 text-sm text-muted-foreground">
-              Найдено товаров: {products.total}
+              Найдено товаров: {productsMeta.total}
             </div>
 
-            {/* Product Grid */}
-            {products.data.length > 0 ? (
+            {products.length > 0 ? (
               <>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-8">
-                  {products.data.map((product) => (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                  {products.map((product) => (
                     <ProductCard key={product.id} product={product} />
                   ))}
                 </div>
 
-                {/* Pagination */}
-                {products.last_page > 1 && (
-                  <div className="mt-8">
-                    <Pagination currentPage={products.current_page} lastPage={products.last_page} path="/products" />
-                  </div>
-                )}
+                <div ref={loadMoreRef} className="flex justify-center py-8">
+                  {loading && (
+                    <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                  )}
+                </div>
               </>
             ) : (
               <Card>

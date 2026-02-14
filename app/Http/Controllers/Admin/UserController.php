@@ -13,14 +13,15 @@ class UserController extends Controller
 {
     public function index(Request $request): Response
     {
-        $query = User::query()->select(['id', 'name', 'email', 'avatar', 'phone', 'is_active', 'created_at']);
+        $query = User::query()->select(['id', 'name', 'email', 'avatar', 'phone', 'telegram_username', 'is_active', 'created_at']);
 
         if ($request->filled('search')) {
             $search = $request->search;
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
                     ->orWhere('email', 'like', "%{$search}%")
-                    ->orWhere('phone', 'like', "%{$search}%");
+                    ->orWhere('phone', 'like', "%{$search}%")
+                    ->orWhere('telegram_username', 'like', "%{$search}%");
             });
         }
 

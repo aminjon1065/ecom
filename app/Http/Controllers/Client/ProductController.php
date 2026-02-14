@@ -21,12 +21,14 @@ class ProductController extends Controller
             ->where('is_approved', true)
             ->with(['category:id,name', 'brand:id,name'])
             ->withAvg('reviews', 'rating')
+            ->orderByRaw('qty = 0, name')
             ->withCount('reviews');
 
         if ($search = $request->input('search')) {
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', "%{$search}%")
-                    ->orWhere('short_description', 'like', "%{$search}%");
+                    ->orWhere('short_description', 'like', "%{$search}%")
+                    ->orWhere('code', 'like', "%{$search}%");
             });
         }
 
@@ -62,20 +64,22 @@ class ProductController extends Controller
             default => $query->latest(),
         };
 
-        $products = $query->paginate(12)->withQueryString();
+        $paginated = $query->paginate(12)->withQueryString();
 
         $categories = Category::where('status', true)
             ->withCount(['products' => fn($q) => $q->where('status', true)->where('is_approved', true)])
             ->having('products_count', '>', 0)
             ->get(['id', 'name']);
 
-        $brands = Brand::where('status', true)
-            ->withCount(['products' => fn($q) => $q->where('status', true)->where('is_approved', true)])
-            ->having('products_count', '>', 0)
-            ->get(['id', 'name']);
+        $brands = Brand::get(['id', 'name']);
 
         return Inertia::render('client/products/index', [
-            'products' => $products,
+            'products' => Inertia::merge($paginated->items()),
+            'productsMeta' => [
+                'current_page' => $paginated->currentPage(),
+                'last_page' => $paginated->lastPage(),
+                'total' => $paginated->total(),
+            ],
             'categories' => $categories,
             'brands' => $brands,
             'filters' => $request->only(['search', 'category', 'sub_category', 'child_category', 'brand', 'min_price', 'max_price', 'sort']),

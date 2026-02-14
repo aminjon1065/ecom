@@ -1,7 +1,7 @@
 import { Button } from '@/components/ui/button';
 import type { SharedData } from '@/types';
 import { Link, usePage } from '@inertiajs/react';
-import { ChevronRight, LayoutGrid, Menu, X } from 'lucide-react';
+import { ChevronRight, LayoutGrid } from 'lucide-react';
 import { ImgHTMLAttributes, useState } from 'react';
 
 interface ChildCategory {
@@ -26,17 +26,13 @@ interface Category {
 }
 
 export function NavMain() {
-    const { categories } = usePage<SharedData & { categories: Category[] }>()
-        .props;
+    const { categoriesMenu } = usePage<
+        SharedData & { categoriesMenu: Category[] }
+    >().props;
     const [open, setOpen] = useState(false);
     const [activeCategory, setActiveCategory] = useState<Category | null>(null);
-    const [mobileOpen, setMobileOpen] = useState(false);
-    const [mobileExpanded, setMobileExpanded] = useState<number | null>(null);
-    const [mobileSubExpanded, setMobileSubExpanded] = useState<number | null>(
-        null,
-    );
 
-    const cats = categories || [];
+    const cats = categoriesMenu || [];
 
     return (
         <>
@@ -183,197 +179,7 @@ export function NavMain() {
                 )}
             </div>
 
-            {/* Mobile Catalog Button */}
-            <Button
-                variant="ghost"
-                size="icon"
-                className="md:hidden"
-                onClick={() => setMobileOpen(true)}
-            >
-                <Menu className="h-5 w-5" />
-            </Button>
-
-            {/* Mobile Drawer */}
-            {mobileOpen && (
-                <>
-                    <div
-                        className="fixed inset-0 z-50 bg-black/50"
-                        onClick={() => setMobileOpen(false)}
-                    />
-                    <div className="fixed inset-y-0 left-0 z-50 w-80 overflow-y-auto bg-background shadow-xl">
-                        <div className="flex items-center justify-between border-b px-4 py-3">
-                            <span className="font-semibold">Каталог</span>
-                            <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => setMobileOpen(false)}
-                            >
-                                <X className="h-5 w-5" />
-                            </Button>
-                        </div>
-
-                        <div className="py-2">
-                            <Link
-                                href="/products"
-                                onClick={() => setMobileOpen(false)}
-                                className="block px-4 py-2.5 text-sm font-semibold text-primary"
-                            >
-                                Все товары
-                            </Link>
-
-                            {cats.map((cat) => (
-                                <div
-                                    key={cat.id}
-                                    className="border-b last:border-0"
-                                >
-                                    <div
-                                        className="flex cursor-pointer items-center justify-between px-4 py-2.5"
-                                        onClick={() =>
-                                            setMobileExpanded(
-                                                mobileExpanded === cat.id
-                                                    ? null
-                                                    : cat.id,
-                                            )
-                                        }
-                                    >
-                                        <Link
-                                            href={`/products?category=${cat.id}`}
-                                            onClick={(e) => {
-                                                if (
-                                                    cat.sub_categories?.length >
-                                                    0
-                                                ) {
-                                                    e.preventDefault();
-                                                } else {
-                                                    setMobileOpen(false);
-                                                }
-                                            }}
-                                            className="flex items-center gap-2 text-sm font-medium"
-                                        >
-                                            {cat.icon && (
-                                                <img src={`${cat.icon}`} alt={cat.name} />
-                                            )}
-                                            {cat.name}
-                                        </Link>
-                                        {cat.sub_categories?.length > 0 && (
-                                            <ChevronRight
-                                                className={`h-4 w-4 text-muted-foreground transition-transform ${
-                                                    mobileExpanded === cat.id
-                                                        ? 'rotate-90'
-                                                        : ''
-                                                }`}
-                                            />
-                                        )}
-                                    </div>
-
-                                    {mobileExpanded === cat.id &&
-                                        cat.sub_categories?.length > 0 && (
-                                            <div className="bg-muted/30 pb-2">
-                                                <Link
-                                                    href={`/products?category=${cat.id}`}
-                                                    onClick={() =>
-                                                        setMobileOpen(false)
-                                                    }
-                                                    className="block px-6 py-1.5 text-xs text-primary hover:underline"
-                                                >
-                                                    Смотреть все в «{cat.name}»
-                                                </Link>
-                                                {cat.sub_categories.map(
-                                                    (sub) => (
-                                                        <div key={sub.id}>
-                                                            <div
-                                                                className="flex cursor-pointer items-center justify-between px-6 py-2"
-                                                                onClick={(
-                                                                    e,
-                                                                ) => {
-                                                                    e.stopPropagation();
-                                                                    setMobileSubExpanded(
-                                                                        mobileSubExpanded ===
-                                                                            sub.id
-                                                                            ? null
-                                                                            : sub.id,
-                                                                    );
-                                                                }}
-                                                            >
-                                                                <Link
-                                                                    href={`/products?category=${cat.id}&sub_category=${sub.id}`}
-                                                                    onClick={(
-                                                                        e,
-                                                                    ) => {
-                                                                        if (
-                                                                            sub
-                                                                                .child_category
-                                                                                ?.length >
-                                                                            0
-                                                                        ) {
-                                                                            e.preventDefault();
-                                                                        } else {
-                                                                            setMobileOpen(
-                                                                                false,
-                                                                            );
-                                                                        }
-                                                                    }}
-                                                                    className="text-sm font-medium"
-                                                                >
-                                                                    {sub.name}
-                                                                </Link>
-                                                                {sub
-                                                                    .child_category
-                                                                    ?.length >
-                                                                    0 && (
-                                                                    <ChevronRight
-                                                                        className={`h-3.5 w-3.5 text-muted-foreground transition-transform ${
-                                                                            mobileSubExpanded ===
-                                                                            sub.id
-                                                                                ? 'rotate-90'
-                                                                                : ''
-                                                                        }`}
-                                                                    />
-                                                                )}
-                                                            </div>
-
-                                                            {mobileSubExpanded ===
-                                                                sub.id &&
-                                                                sub
-                                                                    .child_category
-                                                                    ?.length >
-                                                                    0 && (
-                                                                    <div className="pb-1 pl-10">
-                                                                        {sub.child_category.map(
-                                                                            (
-                                                                                child,
-                                                                            ) => (
-                                                                                <Link
-                                                                                    key={
-                                                                                        child.id
-                                                                                    }
-                                                                                    href={`/products?category=${cat.id}&sub_category=${sub.id}&child_category=${child.id}`}
-                                                                                    onClick={() =>
-                                                                                        setMobileOpen(
-                                                                                            false,
-                                                                                        )
-                                                                                    }
-                                                                                    className="block py-1.5 text-sm text-muted-foreground hover:text-foreground"
-                                                                                >
-                                                                                    {
-                                                                                        child.name
-                                                                                    }
-                                                                                </Link>
-                                                                            ),
-                                                                        )}
-                                                                    </div>
-                                                                )}
-                                                        </div>
-                                                    ),
-                                                )}
-                                            </div>
-                                        )}
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                </>
-            )}
+            {/* Mobile catalog is handled by MobileBottomNav + MobileCatalogOverlay */}
         </>
     );
 }

@@ -59,42 +59,45 @@ export function ProductCard({ product, showActions = true }: ProductCardProps) {
                         src={`/storage/${product.thumb_image}`}
                         alt={product.name}
                         className="h-full w-full object-cover transition-transform group-hover:scale-105"
+                        loading="lazy"
                     />
+                    {/* Badges */}
                     {product.product_type && (
-                        <Badge className="absolute top-2 left-2" variant={product.product_type === 'Новый' ? 'default' : 'secondary'}>
+                        <Badge className="absolute top-1.5 left-1.5 text-[10px] sm:top-2 sm:left-2 sm:text-xs" variant={product.product_type === 'Новый' ? 'default' : 'secondary'}>
                             {product.product_type}
                         </Badge>
                     )}
                     {hasDiscount && (
-                        <Badge className="absolute top-2 right-2" variant="destructive">
+                        <Badge className="absolute top-1.5 right-1.5 text-[10px] sm:top-2 sm:right-2 sm:text-xs" variant="destructive">
                             -{Math.round(((original - price) / original) * 100)}%
                         </Badge>
                     )}
+                    {/* Action buttons: always visible on mobile, hover on desktop */}
                     {showActions && (
-                        <div className="absolute right-2 bottom-2 flex gap-1 opacity-0 transition-opacity group-hover:opacity-100">
-                            <Button size="icon" variant="secondary" className="h-8 w-8" onClick={toggleWishlist}>
-                                <Heart className="h-3.5 w-3.5" />
+                        <div className="absolute right-1.5 bottom-1.5 flex gap-1 sm:right-2 sm:bottom-2 sm:opacity-0 sm:transition-opacity sm:group-hover:opacity-100">
+                            <Button size="icon" variant="secondary" className="h-7 w-7 shadow-sm sm:h-8 sm:w-8" onClick={toggleWishlist}>
+                                <Heart className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
                             </Button>
-                            <Button size="icon" variant="secondary" className="h-8 w-8" onClick={addToCart}>
-                                <ShoppingCart className="h-3.5 w-3.5" />
+                            <Button size="icon" variant="secondary" className="h-7 w-7 shadow-sm sm:h-8 sm:w-8" onClick={addToCart}>
+                                <ShoppingCart className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
                             </Button>
                         </div>
                     )}
                 </div>
-                <CardContent className="p-3">
+                <CardContent className="p-2.5 sm:p-3">
                     {product.category && (
-                        <p className="mb-1 text-xs text-muted-foreground">{product.category.name}</p>
+                        <p className="mb-0.5 truncate text-[10px] text-muted-foreground sm:mb-1 sm:text-xs">{product.category.name}</p>
                     )}
-                    <h3 className="line-clamp-2 text-sm font-medium leading-tight">{product.name}</h3>
-                    <div className="mt-2 flex items-center gap-2">
-                        <span className="font-semibold">{price.toLocaleString()} сом.</span>
+                    <h3 className="line-clamp-2 text-xs font-medium leading-tight sm:text-sm">{product.name}</h3>
+                    <div className="mt-1.5 flex flex-wrap items-baseline gap-x-2 gap-y-0 sm:mt-2">
+                        <span className="text-sm font-semibold sm:text-base">{price.toLocaleString()} сом.</span>
                         {hasDiscount && (
-                            <span className="text-sm text-muted-foreground line-through">{original.toLocaleString()} сом.</span>
+                            <span className="text-[10px] text-muted-foreground line-through sm:text-sm">{original.toLocaleString()}</span>
                         )}
                     </div>
                     {rating && (
-                        <div className="mt-1.5 flex items-center gap-1 text-xs text-muted-foreground">
-                            <Star className="h-3 w-3 fill-yellow-400 text-yellow-400" />
+                        <div className="mt-1 flex items-center gap-1 text-[10px] text-muted-foreground sm:mt-1.5 sm:text-xs">
+                            <Star className="h-2.5 w-2.5 fill-yellow-400 text-yellow-400 sm:h-3 sm:w-3" />
                             <span>{rating}</span>
                             <span>({product.reviews_count})</span>
                         </div>

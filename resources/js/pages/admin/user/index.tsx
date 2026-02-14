@@ -19,6 +19,7 @@ interface UserItem {
     email: string;
     avatar: string | null;
     phone: string | null;
+    telegram_username: string | null;
     is_active: boolean;
     created_at: string;
     roles: { id: number; name: string }[];
@@ -64,12 +65,23 @@ export default function UserIndex({ users, filters: initialFilters }: Props) {
                     )}
                     <div>
                         <div className="font-medium">{row.name}</div>
-                        <div className="text-xs text-muted-foreground">{row.email}</div>
+                        <div className="text-xs text-muted-foreground">
+                            {row.telegram_username
+                                ? `@${row.telegram_username}`
+                                : row.email}
+                        </div>
                     </div>
                 </div>
             ),
         },
-        { key: 'phone', label: 'Телефон', render: (row) => row.phone || '—' },
+        {
+            key: 'phone', label: 'Контакт',
+            render: (row) => row.phone
+                ? row.phone
+                : row.telegram_username
+                    ? <a href={`https://t.me/${row.telegram_username}`} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">@{row.telegram_username}</a>
+                    : '—',
+        },
         {
             key: 'roles', label: 'Роль',
             render: (row) => (

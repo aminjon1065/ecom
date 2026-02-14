@@ -21,7 +21,7 @@ interface Order {
     payment_status: boolean;
     order_status: string;
     created_at: string;
-    user: { id: number; name: string; email: string };
+    user: { id: number; name: string; email: string; phone: string | null; telegram_username: string | null };
 }
 
 const STATUS_LABELS: Record<string, string> = {
@@ -70,7 +70,13 @@ export default function OrderIndex({ orders, filters: initialFilters }: Props) {
             render: (row) => (
                 <div>
                     <div className="font-medium">{row.user.name}</div>
-                    <div className="text-xs text-muted-foreground">{row.user.email}</div>
+                    <div className="text-xs text-muted-foreground">
+                        {row.user.telegram_username
+                            ? `@${row.user.telegram_username}`
+                            : row.user.phone
+                              ? row.user.phone
+                              : row.user.email}
+                    </div>
                 </div>
             ),
         },

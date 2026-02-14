@@ -1,11 +1,19 @@
 import { ProductCard } from '@/components/client/product-card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import AppHeaderLayout from '@/layouts/app/client/app-header-layout';
 import { Head, Link, router } from '@inertiajs/react';
-import { ArrowRight, ChevronLeft, ChevronRight, Flame, Sparkles, Star, TrendingUp } from 'lucide-react';
+import {
+    ArrowRight,
+    ChevronLeft,
+    ChevronRight,
+    Flame,
+    LayoutGrid,
+    Sparkles,
+    Star,
+    TrendingUp,
+} from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 
 interface Slider {
@@ -49,6 +57,7 @@ interface Props {
     categories: Category[];
 }
 
+/* ─────────── Hero Slider ─────────── */
 function HeroSlider({ sliders }: { sliders: Slider[] }) {
     const [current, setCurrent] = useState(0);
 
@@ -56,7 +65,8 @@ function HeroSlider({ sliders }: { sliders: Slider[] }) {
         setCurrent((c) => (c + 1) % sliders.length);
     }, [sliders.length]);
 
-    const prev = () => setCurrent((c) => (c - 1 + sliders.length) % sliders.length);
+    const prev = () =>
+        setCurrent((c) => (c - 1 + sliders.length) % sliders.length);
 
     useEffect(() => {
         if (sliders.length <= 1) return;
@@ -68,21 +78,33 @@ function HeroSlider({ sliders }: { sliders: Slider[] }) {
 
     return (
         <div className="relative overflow-hidden rounded-xl">
-            <div className="relative aspect-21/8 w-full">
+            {/* Mobile: taller aspect ratio for better visibility */}
+            <div className="relative aspect-video w-full sm:aspect-21/8">
                 {sliders.map((slider, i) => (
                     <div
                         key={slider.id}
-                        className={`absolute inset-0 transition-opacity duration-500 ${i === current ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
+                        className={`absolute inset-0 transition-opacity duration-500 ${i === current ? 'opacity-100' : 'pointer-events-none opacity-0'}`}
                     >
-                        <img src={`/storage/${slider.banner}`} alt={slider.title} className="h-full w-full object-cover" />
+                        <img
+                            src={`/storage/${slider.banner}`}
+                            alt={slider.title}
+                            className="h-full w-full object-cover"
+                        />
                         <div className="absolute inset-0 bg-linear-to-r from-black/60 to-transparent" />
-                        <div className="absolute inset-0 flex flex-col justify-center p-8 md:p-12 lg:p-16">
-                            <Badge variant="secondary" className="mb-2 w-fit">{slider.type}</Badge>
-                            <h2 className="mb-2 max-w-lg text-2xl font-bold text-white md:text-4xl">{slider.title}</h2>
-                            <p className="mb-4 text-lg text-white/80">от {slider.starting_price} сом.</p>
+                        <div className="absolute inset-0 flex flex-col justify-center p-5 sm:p-8 md:p-12 lg:p-16">
+                            <Badge variant="secondary" className="mb-2 w-fit text-xs">
+                                {slider.type}
+                            </Badge>
+                            <h2 className="mb-1 max-w-lg text-lg font-bold text-white sm:mb-2 sm:text-2xl md:text-4xl">
+                                {slider.title}
+                            </h2>
+                            <p className="mb-3 text-sm text-white/80 sm:mb-4 sm:text-lg">
+                                от {slider.starting_price} сом.
+                            </p>
                             <Link href={slider.btn_url}>
-                                <Button size="lg">
-                                    Смотреть <ArrowRight className="ml-2 h-4 w-4" />
+                                <Button size="sm" className="sm:size-default">
+                                    Смотреть{' '}
+                                    <ArrowRight className="ml-1.5 h-3.5 w-3.5 sm:h-4 sm:w-4" />
                                 </Button>
                             </Link>
                         </div>
@@ -91,18 +113,24 @@ function HeroSlider({ sliders }: { sliders: Slider[] }) {
             </div>
             {sliders.length > 1 && (
                 <>
-                    <button onClick={prev} className="absolute top-1/2 left-3 -translate-y-1/2 rounded-full bg-white/80 p-2 backdrop-blur hover:bg-white">
-                        <ChevronLeft className="h-5 w-5" />
+                    <button
+                        onClick={prev}
+                        className="absolute top-1/2 left-2 -translate-y-1/2 rounded-full bg-white/80 p-1.5 backdrop-blur hover:bg-white sm:left-3 sm:p-2"
+                    >
+                        <ChevronLeft className="h-4 w-4 sm:h-5 sm:w-5" />
                     </button>
-                    <button onClick={next} className="absolute top-1/2 right-3 -translate-y-1/2 rounded-full bg-white/80 p-2 backdrop-blur hover:bg-white">
-                        <ChevronRight className="h-5 w-5" />
+                    <button
+                        onClick={next}
+                        className="absolute top-1/2 right-2 -translate-y-1/2 rounded-full bg-white/80 p-1.5 backdrop-blur hover:bg-white sm:right-3 sm:p-2"
+                    >
+                        <ChevronRight className="h-4 w-4 sm:h-5 sm:w-5" />
                     </button>
-                    <div className="absolute bottom-3 left-1/2 flex -translate-x-1/2 gap-1.5">
+                    <div className="absolute bottom-2 left-1/2 flex -translate-x-1/2 gap-1.5 sm:bottom-3">
                         {sliders.map((_, i) => (
                             <button
                                 key={i}
                                 onClick={() => setCurrent(i)}
-                                className={`h-2 rounded-full transition-all ${i === current ? 'w-6 bg-white' : 'w-2 bg-white/50'}`}
+                                className={`h-1.5 rounded-full transition-all sm:h-2 ${i === current ? 'w-5 bg-white sm:w-6' : 'w-1.5 bg-white/50 sm:w-2'}`}
                             />
                         ))}
                     </div>
@@ -112,49 +140,127 @@ function HeroSlider({ sliders }: { sliders: Slider[] }) {
     );
 }
 
-function ProductSection({ title, icon, products, viewAllHref }: { title: string; icon: React.ReactNode; products: Product[]; viewAllHref?: string }) {
-    if (!products.length) return null;
+/* ─────────── Category Strip (horizontal scroll on mobile) ─────────── */
+function CategoryStrip({ categories }: { categories: Category[] }) {
+    if (!categories.length) return null;
+
     return (
         <section>
-            <div className="mb-4 flex items-center justify-between">
-                <h2 className="flex items-center gap-2 text-xl font-bold">
-                    {icon} {title}
+            <div className="mb-3 flex items-center justify-between">
+                <h2 className="flex items-center gap-2 text-lg font-bold sm:text-xl">
+                    <LayoutGrid className="h-5 w-5 text-primary" />
+                    Категории
                 </h2>
-                {viewAllHref && (
-                    <Link href={viewAllHref} className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
-                        Смотреть все <ArrowRight className="h-3.5 w-3.5" />
-                    </Link>
-                )}
+                <Link
+                    href="/products"
+                    className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
+                >
+                    Все <ArrowRight className="h-3.5 w-3.5" />
+                </Link>
             </div>
-            <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
-                {products.map((product) => (
-                    <ProductCard key={product.id} product={product} />
+
+            {/* Mobile: Horizontal scroll. Desktop: Grid */}
+            <div className="scrollbar-hide -mx-4 flex gap-3 overflow-x-auto px-4 pb-2 sm:mx-0 sm:grid sm:grid-cols-4 sm:gap-3 sm:overflow-visible sm:px-0 md:grid-cols-6 lg:grid-cols-8">
+                {categories.map((cat) => (
+                    <Link
+                        key={cat.id}
+                        href={`/products?category=${cat.id}`}
+                        className="flex min-w-18 flex-col items-center gap-1.5 sm:min-w-0"
+                    >
+                        <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-muted transition-colors hover:bg-accent sm:h-16 sm:w-16">
+                            {cat.icon ? (
+                                <img src={`${cat.icon}`} alt={cat.name} className="h-7 w-7 sm:h-8 sm:w-8" />
+                            ) : (
+                                <LayoutGrid className="h-6 w-6 text-muted-foreground" />
+                            )}
+                        </div>
+                        <span className="w-full text-center text-[11px] leading-tight text-foreground sm:text-xs">
+                            {cat.name}
+                        </span>
+                    </Link>
                 ))}
             </div>
         </section>
     );
 }
 
+/* ─────────── Product Section ─────────── */
+function ProductSection({
+    title,
+    icon,
+    products,
+    viewAllHref,
+}: {
+    title: string;
+    icon: React.ReactNode;
+    products: Product[];
+    viewAllHref?: string;
+}) {
+    if (!products.length) return null;
+
+    return (
+        <section>
+            <div className="mb-3 flex items-center justify-between sm:mb-4">
+                <h2 className="flex items-center gap-2 text-lg font-bold sm:text-xl">
+                    {icon} {title}
+                </h2>
+                {viewAllHref && (
+                    <Link
+                        href={viewAllHref}
+                        className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
+                    >
+                        Все <ArrowRight className="h-3.5 w-3.5" />
+                    </Link>
+                )}
+            </div>
+
+            {/* Mobile: horizontal scroll. Desktop: grid */}
+            <div className="scrollbar-hide -mx-4 flex gap-3 overflow-x-auto px-4 pb-2 sm:mx-0 sm:grid sm:grid-cols-3 sm:gap-4 sm:overflow-visible sm:px-0 md:grid-cols-4">
+                {products.map((product) => (
+                    <div key={product.id} className="w-[44vw] shrink-0 sm:w-auto">
+                        <ProductCard product={product} />
+                    </div>
+                ))}
+            </div>
+        </section>
+    );
+}
+
+/* ─────────── Newsletter ─────────── */
 function NewsletterSection() {
     const [email, setEmail] = useState('');
     const [submitted, setSubmitted] = useState(false);
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        router.post('/newsletter', { email }, {
-            preserveScroll: true,
-            onSuccess: () => { setEmail(''); setSubmitted(true); },
-        });
+        router.post(
+            '/newsletter',
+            { email },
+            {
+                preserveScroll: true,
+                onSuccess: () => {
+                    setEmail('');
+                    setSubmitted(true);
+                },
+            },
+        );
     };
 
     return (
-        <section className="rounded-xl bg-muted/50 p-8 text-center">
-            <h2 className="mb-2 text-xl font-bold">Подпишитесь на рассылку</h2>
-            <p className="mb-4 text-sm text-muted-foreground">Получайте уведомления о скидках и новинках</p>
+        <section className="rounded-xl bg-muted/50 p-6 text-center sm:p-8">
+            <h2 className="mb-2 text-lg font-bold sm:text-xl">Подпишитесь на рассылку</h2>
+            <p className="mb-4 text-sm text-muted-foreground">
+                Получайте уведомления о скидках и новинках
+            </p>
             {submitted ? (
-                <p className="text-sm text-green-600">Вы успешно подписались!</p>
+                <p className="text-sm text-green-600">
+                    Вы успешно подписались!
+                </p>
             ) : (
-                <form onSubmit={handleSubmit} className="mx-auto flex max-w-md gap-2">
+                <form
+                    onSubmit={handleSubmit}
+                    className="mx-auto flex max-w-md gap-2"
+                >
                     <Input
                         type="email"
                         placeholder="Ваш email..."
@@ -169,31 +275,22 @@ function NewsletterSection() {
     );
 }
 
-export default function Welcome({ sliders, flashSaleProducts, newProducts, topProducts, bestProducts, categories }: Props) {
+/* ─────────── Main Page ─────────── */
+export default function Welcome({
+    sliders,
+    flashSaleProducts,
+    newProducts,
+    topProducts,
+    bestProducts,
+    categories,
+}: Props) {
     return (
         <AppHeaderLayout>
             <Head title="Главная" />
-            <div className="mx-auto max-w-7xl space-y-10 px-4 py-6 sm:px-6 lg:px-8">
+            <div className="mx-auto max-w-7xl space-y-6 px-4 py-4 sm:space-y-10 sm:px-6 sm:py-6 lg:px-8">
                 <HeroSlider sliders={sliders} />
 
-                {categories.length > 0 && (
-                    <section>
-                        <h2 className="mb-4 text-xl font-bold">Популярные категории</h2>
-                        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 md:grid-cols-8">
-                            {categories.map((cat) => (
-                                <Link key={cat.id} href={`/products?category=${cat.id}`}>
-                                    <Card className="text-center transition-shadow hover:shadow-md">
-                                        <CardContent className="p-3">
-                                            <div className="mb-1 text-2xl">{cat.icon || '📦'}</div>
-                                            <p className="line-clamp-1 text-xs font-medium">{cat.name}</p>
-                                            <p className="text-[10px] text-muted-foreground">{cat.products_count} тов.</p>
-                                        </CardContent>
-                                    </Card>
-                                </Link>
-                            ))}
-                        </div>
-                    </section>
-                )}
+                <CategoryStrip categories={categories} />
 
                 <ProductSection
                     title="Акции"

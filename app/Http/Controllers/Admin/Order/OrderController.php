@@ -13,7 +13,7 @@ class OrderController extends Controller
 {
     public function index(Request $request): Response
     {
-        $query = Order::with('user:id,name,email')
+        $query = Order::with('user:id,name,email,phone,telegram_username')
             ->select(['id', 'invoice_id', 'user_id', 'amount', 'product_quantity', 'payment_method', 'payment_status', 'order_status', 'created_at']);
 
         if ($request->filled('search')) {
@@ -43,7 +43,7 @@ class OrderController extends Controller
     public function show(Order $order): Response
     {
         $order->load([
-            'user:id,name,email,phone',
+            'user:id,name,email,phone,telegram_username',
             'products.product:id,name,thumb_image,price',
         ]);
 
