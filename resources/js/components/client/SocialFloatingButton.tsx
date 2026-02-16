@@ -7,7 +7,7 @@ export default function SocialFloatingButton() {
     const toggleMenu = () => setIsOpen(!isOpen);
 
     return (
-        <div className="fixed right-6 bottom-6 z-50">
+        <div className="fixed right-6 bottom-14 md:bottom-6 z-50">
             {/* Social Media Links */}
             <div
                 className={`mb-3 flex flex-col gap-3 transition-all duration-300 ${
