@@ -291,7 +291,7 @@ export default function TrackOrder({ order, error, invoiceId }: Props) {
                                             <div key={item.id} className="flex items-center gap-3 py-3 first:pt-0 last:pb-0">
                                                 {item.product?.thumb_image && (
                                                     <img
-                                                        src={`/${item.product.thumb_image}`}
+                                                        src={`${item.product.thumb_image}`}
                                                         alt={item.product?.name || ''}
                                                         className="h-14 w-14 rounded-md border object-cover"
                                                     />
