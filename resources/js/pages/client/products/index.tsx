@@ -73,10 +73,12 @@ interface Props {
   filters: Filters;
 }
 
-export default function ProductsIndex({ products, productsMeta, categories, brands, filters }: Props) {
+export default function ProductsIndex({ products, productsMeta, categories, brands, filters: rawFilters }: Props) {
+  const filters = (rawFilters && !Array.isArray(rawFilters) ? rawFilters : {}) as Filters;
   const [searchQuery, setSearchQuery] = useState(filters.search || '');
   const [minPrice, setMinPrice] = useState(filters.min_price?.toString() || '');
   const [maxPrice, setMaxPrice] = useState(filters.max_price?.toString() || '');
+  const [sortValue, setSortValue] = useState(filters.sort || 'latest');
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const loadMoreRef = useRef<HTMLDivElement>(null);
@@ -127,7 +129,7 @@ export default function ProductsIndex({ products, productsMeta, categories, bran
     });
 
     router.get('/products', updatedFilters, {
-      preserveState: false,
+      preserveState: true,
       preserveScroll: false,
       reset: ['products'],
     });
@@ -331,11 +333,14 @@ export default function ProductsIndex({ products, productsMeta, categories, bran
                 Сортировка:
               </Label>
               <Select
-                value={filters.sort || 'latest'}
-                onValueChange={(value) => handleFilterChange({ sort: value })}
+                value={sortValue}
+                onValueChange={(value) => {
+                  setSortValue(value);
+                  handleFilterChange({ sort: value });
+                }}
               >
                 <SelectTrigger className="w-45">
-                  <SelectValue />
+                  <SelectValue placeholder="Новинки" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="latest">Новинки</SelectItem>

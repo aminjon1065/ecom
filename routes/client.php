@@ -5,6 +5,7 @@ use App\Http\Controllers\Client\AccountController;
 use App\Http\Controllers\Client\CartController;
 use App\Http\Controllers\Client\CheckoutController;
 use App\Http\Controllers\Client\NewsletterSubscriberController;
+use App\Http\Controllers\Client\OrderTrackingController;
 use App\Http\Controllers\Client\ProductController;
 use App\Http\Controllers\Client\UserAddressController;
 use App\Http\Controllers\Client\WishlistController;
@@ -20,6 +21,7 @@ Route::middleware('guest')->group(function () {
 Route::get('/products', [ProductController::class, 'index'])->name('products.index');
 Route::get('/products/{slug}', [ProductController::class, 'show'])->name('products.show');
 Route::post('/newsletter', [NewsletterSubscriberController::class, 'store'])->name('newsletter.store');
+Route::get('/track-order', [OrderTrackingController::class, 'index'])->name('track-order');
 
 // Auth-required routes
 Route::middleware(['auth', 'verified'])->group(function () {
@@ -48,6 +50,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/', [AccountController::class, 'dashboard'])->name('dashboard');
         Route::get('/orders', [AccountController::class, 'orders'])->name('orders');
         Route::get('/orders/{order}', [AccountController::class, 'orderShow'])->name('orders.show');
+        Route::get('/orders/{order}/invoice', [AccountController::class, 'downloadInvoice'])->name('orders.invoice');
         Route::get('/addresses', [AccountController::class, 'addresses'])->name('addresses');
         Route::get('/profile', [AccountController::class, 'profile'])->name('profile');
         Route::put('/profile', [AccountController::class, 'updateProfile'])->name('profile.update');

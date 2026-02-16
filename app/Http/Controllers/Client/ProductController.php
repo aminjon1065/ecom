@@ -21,7 +21,6 @@ class ProductController extends Controller
             ->where('is_approved', true)
             ->with(['category:id,name', 'brand:id,name'])
             ->withAvg('reviews', 'rating')
-            ->orderByRaw('qty = 0, name')
             ->withCount('reviews');
 
         if ($search = $request->input('search')) {
@@ -57,6 +56,8 @@ class ProductController extends Controller
         }
 
         $sort = $request->input('sort', 'latest');
+        // Push out-of-stock items to the bottom, then sort by user choice
+        $query->orderByRaw('qty = 0');
         match ($sort) {
             'price_asc' => $query->orderBy('price'),
             'price_desc' => $query->orderByDesc('price'),

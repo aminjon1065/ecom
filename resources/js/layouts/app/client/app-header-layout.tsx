@@ -182,6 +182,7 @@ const AppHeaderLayout = ({ children }: AppHeaderLayoutProps) => {
                                 <li><a href="#" className="hover:text-foreground">Доставка</a></li>
                                 <li><a href="#" className="hover:text-foreground">Оплата</a></li>
                                 <li><a href="#" className="hover:text-foreground">Возврат</a></li>
+                                <li><Link href="/track-order" className="hover:text-foreground">Отслеживание заказа</Link></li>
                             </ul>
                         </div>
                         <div>

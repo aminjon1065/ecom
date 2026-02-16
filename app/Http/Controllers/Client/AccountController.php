@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Client;
 use App\Http\Controllers\Controller;
 use App\Models\Order;
 use App\Models\UserAddress;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -60,6 +61,20 @@ class AccountController extends Controller
         return Inertia::render('client/account/order-show', [
             'order' => $order,
         ]);
+    }
+
+    public function downloadInvoice(Order $order)
+    {
+        abort_unless($order->user_id === Auth::id(), 403);
+
+        $order->load(['products.product:id,name', 'user:id,name']);
+
+        $pdf = Pdf::loadView('invoices.order-invoice', [
+            'order' => $order,
+            'title' => 'Чек #' . $order->invoice_id,
+        ]);
+
+        return $pdf->download("invoice-{$order->invoice_id}.pdf");
     }
 
     public function addresses(): Response

@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import AppHeaderLayout from '@/layouts/app/client/app-header-layout';
 import { Head, Link } from '@inertiajs/react';
-import { ArrowLeft, Calendar, CreditCard, Hash, Package } from 'lucide-react';
+import { ArrowLeft, Calendar, CreditCard, Download, Hash, Package } from 'lucide-react';
 
 interface OrderProduct {
     id: number;
@@ -70,13 +70,19 @@ export default function OrderShow({ order }: Props) {
             <Head title={`Заказ #${order.invoice_id}`} />
 
             <div className="container mx-auto px-4 py-8">
-                <div className="mb-6">
+                <div className="mb-6 flex items-center justify-between">
                     <Link href="/account/orders">
                         <Button variant="ghost" size="sm">
                             <ArrowLeft className="mr-2 h-4 w-4" />
                             Назад к заказам
                         </Button>
                     </Link>
+                    <a href={`/account/orders/${order.id}/invoice`}>
+                        <Button variant="outline" size="sm">
+                            <Download className="mr-2 h-4 w-4" />
+                            Скачать чек
+                        </Button>
+                    </a>
                 </div>
 
                 <h1 className="mb-8 text-3xl font-bold">

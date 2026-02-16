@@ -101,7 +101,7 @@ export function NavMain() {
                                             className="flex flex-1 items-center gap-2"
                                         >
                                             <img
-                                                src={`${cat.icon}`}
+                                                src={`/${cat.icon}`}
                                                 alt={cat.name}
                                                 className={"w-6 h-6"}
                                             />
