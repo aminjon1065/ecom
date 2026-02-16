@@ -18,6 +18,7 @@ import type { SharedData } from '@/types';
 import { Link, router, usePage } from '@inertiajs/react';
 import { Heart, LogIn, Search, ShoppingCart, User } from 'lucide-react';
 import { ReactNode, useState } from 'react';
+import SocialFloatingButton from '@/components/client/SocialFloatingButton';
 
 type AppHeaderLayoutProps = {
     children: ReactNode;
@@ -204,6 +205,7 @@ const AppHeaderLayout = ({ children }: AppHeaderLayoutProps) => {
 
             {/* Mobile catalog overlay */}
             <MobileCatalogOverlay open={catalogOpen} onClose={() => setCatalogOpen(false)} />
+            <SocialFloatingButton />
         </div>
     );
 };
