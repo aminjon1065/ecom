@@ -49,6 +49,7 @@ Route::patch('/brand/{brand}/is_featured', [BrandController::class, 'toggleFeatu
 //Товары
 Route::resource('product', ProductController::class);
 Route::patch('/product/{product}/status', [ProductController::class, 'toggleStatus'])->name('product.toggle-status');
+Route::patch('/product/{product}/field', [ProductController::class, 'updateField'])->name('product.update-field');
 
 //Продукты продавцов
 Route::get('seller-products', [SellerProductController::class, 'index'])->name('seller-product.index');

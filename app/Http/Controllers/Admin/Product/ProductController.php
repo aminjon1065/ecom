@@ -78,6 +78,32 @@ class ProductController extends Controller
         return redirect()->back();
     }
 
+    /**
+     * Inline update a single field on a product.
+     */
+    public function updateField(Request $request, Product $product): \Illuminate\Http\RedirectResponse
+    {
+        $validated = $request->validate([
+            'field' => ['required', 'string', 'in:price,qty,sku'],
+            'value' => ['required'],
+        ]);
+
+        $field = $validated['field'];
+        $value = $validated['value'];
+
+        $rules = match ($field) {
+            'price' => ['value' => ['required', 'numeric', 'min:0']],
+            'qty' => ['value' => ['required', 'integer', 'min:0']],
+            'sku' => ['value' => ['nullable', 'string', 'max:100']],
+        };
+
+        $request->validate($rules);
+
+        $product->update([$field => $value]);
+
+        return redirect()->back();
+    }
+
     public function create(): \Inertia\Response
     {
         return Inertia::render('admin/product/create', [

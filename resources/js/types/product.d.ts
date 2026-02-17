@@ -7,6 +7,7 @@ export interface Product {
     price: string;
     offer_price: string | null;
     qty: number;
+    sku: string | null;
     code: number;
     status: boolean;
     is_approved: boolean;

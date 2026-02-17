@@ -17,66 +17,167 @@ import { Category } from '@/types/category';
 import { PaginatedResponse } from '@/types/pagination';
 import { Product } from '@/types/product';
 import { router } from '@inertiajs/react';
-import { useState } from 'react';
+import { Check, X } from 'lucide-react';
+import { useRef, useState } from 'react';
 import { toast } from 'sonner';
+
+/**
+ * Inline-editable cell: click to edit, Enter/blur to save, Escape to cancel.
+ */
+function EditableCell({
+    value,
+    field,
+    productId,
+    type = 'text',
+}: {
+    value: string | number | null;
+    field: 'price' | 'qty' | 'sku';
+    productId: number;
+    type?: 'text' | 'number';
+}) {
+    const [editing, setEditing] = useState(false);
+    const [draft, setDraft] = useState(String(value ?? ''));
+    const inputRef = useRef<HTMLInputElement>(null);
+
+    function open() {
+        setDraft(String(value ?? ''));
+        setEditing(true);
+        setTimeout(() => inputRef.current?.select(), 0);
+    }
+
+    function save() {
+        const trimmed = draft.trim();
+        if (trimmed === String(value ?? '')) {
+            setEditing(false);
+            return;
+        }
+        router.patch(
+            product.updateField(productId).url,
+            { field, value: trimmed },
+            {
+                preserveScroll: true,
+                onSuccess: () => {
+                    toast.success('Сохранено');
+                    setEditing(false);
+                },
+                onError: () => toast.error('Ошибка сохранения'),
+            },
+        );
+    }
+
+    function cancel() {
+        setDraft(String(value ?? ''));
+        setEditing(false);
+    }
+
+    if (!editing) {
+        return (
+            <button
+                type="button"
+                onClick={open}
+                className="w-full rounded px-2 py-1 text-left hover:bg-muted transition-colors cursor-pointer"
+            >
+                {value ?? '—'}
+            </button>
+        );
+    }
+
+    return (
+        <div className="flex items-center gap-1">
+            <Input
+                ref={inputRef}
+                type={type}
+                value={draft}
+                onChange={(e) => setDraft(e.target.value)}
+                onKeyDown={(e) => {
+                    if (e.key === 'Enter') save();
+                    if (e.key === 'Escape') cancel();
+                }}
+                onBlur={save}
+                className="h-8 w-full min-w-[60px]"
+                autoFocus
+            />
+            <Button
+                size="icon"
+                variant="ghost"
+                className="h-7 w-7 shrink-0"
+                onMouseDown={(e) => {
+                    e.preventDefault();
+                    save();
+                }}
+            >
+                <Check className="h-3.5 w-3.5 text-green-600" />
+            </Button>
+            <Button
+                size="icon"
+                variant="ghost"
+                className="h-7 w-7 shrink-0"
+                onMouseDown={(e) => {
+                    e.preventDefault();
+                    cancel();
+                }}
+            >
+                <X className="h-3.5 w-3.5 text-destructive" />
+            </Button>
+        </div>
+    );
+}
 
 const columns: Column<Product>[] = [
     {
-        key: 'code',
-        label: 'Код',
-        className: 'text-center',
-    },
-    {
-        key: 'thumb_image',
-        label: '',
-        className: 'w-[70px]',
-        render: (row) => (
-            <img
-                src={`/storage${row.thumb_image}`}
-                alt={row.name}
-                className="h-12 w-12 rounded border object-cover"
-            />
-        ),
+        key: 'id',
+        label: 'ID',
+        className: 'w-[60px] text-center',
     },
     {
         key: 'name',
         label: 'Название',
         render: (row) => (
-            <div className="space-y-1">
-                <div className="font-medium">{row.name}</div>
-                <div className="text-xs text-muted-foreground">{row.slug}</div>
-            </div>
+            <div className="font-medium">{row.name}</div>
         ),
     },
     {
         key: 'price',
         label: 'Цена',
+        className: 'w-[160px]',
         render: (row) => (
-            <div className="text-sm">
-                {row.offer_price ? (
-                    <>
-                        <div className="text-muted-foreground line-through">
-                            {row.price}
-                        </div>
-                        <div className="font-medium text-primary">
-                            {row.offer_price}
-                        </div>
-                    </>
-                ) : (
-                    row.price
-                )}
-            </div>
+            <EditableCell
+                value={row.price}
+                field="price"
+                productId={row.id}
+                type="number"
+            />
         ),
     },
     {
         key: 'qty',
-        label: 'Остаток',
-        className: 'text-center',
+        label: 'Кол-во',
+        className: 'w-[130px]',
+        render: (row) => (
+            <EditableCell
+                value={row.qty}
+                field="qty"
+                productId={row.id}
+                type="number"
+            />
+        ),
+    },
+    {
+        key: 'sku',
+        label: 'SKU',
+        className: 'w-[160px]',
+        render: (row) => (
+            <EditableCell
+                value={row.sku}
+                field="sku"
+                productId={row.id}
+            />
+        ),
     },
     {
         key: 'status',
         label: 'Активен',
-        className: 'text-center',
+        className: 'w-[80px] text-center',
         render: (row) => (
             <Switch
                 checked={row.status}
@@ -93,23 +194,8 @@ const columns: Column<Product>[] = [
             />
         ),
     },
-    {
-        key: 'actions',
-        label: '',
-        className: 'text-right',
-        render: (row) => (
-            <div className="flex justify-end gap-2">
-                <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => console.log(row.name)}
-                >
-                    Редактировать
-                </Button>
-            </div>
-        ),
-    },
 ];
+
 interface Props {
     products: PaginatedResponse<Product>;
     filters: {
