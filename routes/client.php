@@ -22,6 +22,7 @@ Route::get('/products', [ProductController::class, 'index'])->name('products.ind
 Route::get('/products/{slug}', [ProductController::class, 'show'])->name('products.show');
 Route::post('/newsletter', [NewsletterSubscriberController::class, 'store'])->name('newsletter.store');
 Route::get('/track-order', [OrderTrackingController::class, 'index'])->name('track-order');
+Route::get('/api/search', [ProductController::class, 'search'])->name('api.search');
 
 // Auth-required routes
 Route::middleware(['auth', 'verified'])->group(function () {

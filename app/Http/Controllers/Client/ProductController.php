@@ -7,6 +7,7 @@ use App\Models\Brand;
 use App\Models\Category;
 use App\Models\Product;
 use App\Models\ProductReview;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -24,10 +25,42 @@ class ProductController extends Controller
             ->withCount('reviews');
 
         if ($search = $request->input('search')) {
-            $query->where(function ($q) use ($search) {
+            $bigrams = $this->getBigrams($search);
+            $words = array_filter(explode(' ', trim($search)));
+
+            $query->where(function ($q) use ($search, $words, $bigrams) {
+                // Exact substring match
                 $q->where('name', 'like', "%{$search}%")
                     ->orWhere('short_description', 'like', "%{$search}%")
                     ->orWhere('code', 'like', "%{$search}%");
+
+                // Multi-word: each word matches somewhere
+                if (count($words) > 1) {
+                    $q->orWhere(function ($sub) use ($words) {
+                        foreach ($words as $word) {
+                            $sub->where(function ($inner) use ($word) {
+                                $inner->where('name', 'like', "%{$word}%")
+                                    ->orWhere('short_description', 'like', "%{$word}%");
+                            });
+                        }
+                    });
+                }
+
+                // Fuzzy bigram matching: at least 50% of bigrams match
+                if (!empty($bigrams)) {
+                    $minMatches = max(1, (int) ceil(count($bigrams) * 0.5));
+                    $conditions = [];
+                    $bindings = [];
+                    foreach ($bigrams as $bigram) {
+                        $conditions[] = '(LOWER(name) LIKE ?)';
+                        $bindings[] = '%' . mb_strtolower($bigram) . '%';
+                    }
+
+                    $q->orWhereRaw(
+                        '(' . implode(' + ', $conditions) . ') >= ?',
+                        [...$bindings, $minMatches]
+                    );
+                }
             });
         }
 
@@ -133,6 +166,96 @@ class ProductController extends Controller
             'isInWishlist' => $isInWishlist,
             'isInCart' => $isInCart,
         ]);
+    }
+
+    public function search(Request $request): JsonResponse
+    {
+        $q = trim($request->input('q', ''));
+
+        if (mb_strlen($q) < 2) {
+            return response()->json([]);
+        }
+
+        $query = Product::where('status', true)
+            ->where('is_approved', true)
+            ->select(['id', 'name', 'slug', 'thumb_image', 'price', 'offer_price', 'offer_start_date', 'offer_end_date', 'category_id', 'qty'])
+            ->with('category:id,name');
+
+        // Generate bigrams (2-char chunks) for fuzzy matching
+        $bigrams = $this->getBigrams($q);
+
+        if (!empty($bigrams)) {
+            // Build a relevance score: count how many bigrams match in name
+            $scoreExpression = [];
+            $bindings = [];
+
+            foreach ($bigrams as $bigram) {
+                $scoreExpression[] = '(LOWER(name) LIKE ?)';
+                $bindings[] = '%' . mb_strtolower($bigram) . '%';
+            }
+
+            $scoreRaw = implode(' + ', $scoreExpression);
+
+            // Also try exact LIKE as primary match
+            $query->where(function ($sub) use ($q, $bigrams) {
+                // Exact substring match (highest priority)
+                $sub->where('name', 'like', "%{$q}%")
+                    ->orWhere('short_description', 'like', "%{$q}%")
+                    ->orWhere('code', 'like', "%{$q}%");
+
+                // Fuzzy: at least 50% of bigrams must match in name
+                $minMatches = max(1, (int) ceil(count($bigrams) * 0.5));
+                $bigramConditions = [];
+                $bigramBindings = [];
+                foreach ($bigrams as $bigram) {
+                    $bigramConditions[] = '(LOWER(name) LIKE ?)';
+                    $bigramBindings[] = '%' . mb_strtolower($bigram) . '%';
+                }
+
+                $sub->orWhereRaw(
+                    '(' . implode(' + ', $bigramConditions) . ') >= ?',
+                    [...$bigramBindings, $minMatches]
+                );
+            });
+
+            // Order by relevance: exact match > starts with > bigram score > in-stock
+            $products = $query
+                ->orderByRaw('qty = 0')
+                ->orderByRaw(
+                    'CASE WHEN LOWER(name) LIKE ? THEN 0 WHEN LOWER(name) LIKE ? THEN 1 ELSE 2 END',
+                    [mb_strtolower($q), mb_strtolower($q) . '%']
+                )
+                ->orderByRaw("({$scoreRaw}) DESC", $bindings)
+                ->limit(8)
+                ->get();
+        } else {
+            $products = $query
+                ->where('name', 'like', "%{$q}%")
+                ->orderByRaw('qty = 0')
+                ->limit(8)
+                ->get();
+        }
+
+        return response()->json($products);
+    }
+
+    /**
+     * Generate bigrams (2-character chunks) from a string for fuzzy matching.
+     */
+    private function getBigrams(string $str): array
+    {
+        $str = mb_strtolower(trim($str));
+        $len = mb_strlen($str);
+        $bigrams = [];
+
+        for ($i = 0; $i < $len - 1; $i++) {
+            $bigram = mb_substr($str, $i, 2);
+            if (trim($bigram) !== '' && mb_strlen(trim($bigram)) === 2) {
+                $bigrams[] = $bigram;
+            }
+        }
+
+        return array_unique($bigrams);
     }
 
     public function submitReview(Request $request, Product $product): RedirectResponse

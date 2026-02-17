@@ -2,9 +2,9 @@ import AppLogo from '@/components/app-logo';
 import { MobileBottomNav } from '@/components/client/mobile-bottom-nav';
 import { MobileCatalogOverlay } from '@/components/client/mobile-catalog-overlay';
 import { NavMain } from '@/components/client/NavMain';
+import { SearchSuggestions } from '@/components/client/search-suggestions';
 import { ModeToggle } from '@/components/mode-toggle';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import {
     Tooltip,
     TooltipContent,
@@ -15,8 +15,8 @@ import { index as cartIndex } from '@/routes/cart';
 import { index as wishlistIndex } from '@/routes/wishlist';
 import { dashboard as accountDashboard } from '@/routes/account';
 import type { SharedData } from '@/types';
-import { Link, router, usePage } from '@inertiajs/react';
-import { Heart, LogIn, Search, ShoppingCart, User } from 'lucide-react';
+import { Link, usePage } from '@inertiajs/react';
+import { Heart, LogIn, ShoppingCart, User } from 'lucide-react';
 import { ReactNode, useState } from 'react';
 import SocialFloatingButton from '@/components/client/SocialFloatingButton';
 
@@ -26,24 +26,7 @@ type AppHeaderLayoutProps = {
 
 const AppHeaderLayout = ({ children }: AppHeaderLayoutProps) => {
     const { auth, cartCount, wishlistCount } = usePage<SharedData & { cartCount?: number; wishlistCount?: number }>().props;
-    const [searchQuery, setSearchQuery] = useState('');
     const [catalogOpen, setCatalogOpen] = useState(false);
-    const [mobileSearchQuery, setMobileSearchQuery] = useState('');
-
-    const handleSearch = (e: React.FormEvent) => {
-        e.preventDefault();
-        if (searchQuery.trim()) {
-            router.get('/products', { search: searchQuery });
-        }
-    };
-
-    const handleMobileSearch = (e: React.FormEvent) => {
-        e.preventDefault();
-        if (mobileSearchQuery.trim()) {
-            router.get('/products', { search: mobileSearchQuery });
-            setCatalogOpen(false);
-        }
-    };
 
     return (
         <div className="flex min-h-screen flex-col justify-between">
@@ -57,18 +40,8 @@ const AppHeaderLayout = ({ children }: AppHeaderLayoutProps) => {
                     {/* Desktop: Catalog mega menu */}
                     <NavMain />
 
-                    {/* Desktop: Search bar */}
-                    <form onSubmit={handleSearch} className="relative hidden w-full md:block">
-                        <Input
-                            placeholder="Поиск товаров..."
-                            className="h-9 pr-8"
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                        />
-                        <button type="submit" className="absolute top-1/2 right-2.5 -translate-y-1/2 text-muted-foreground hover:text-foreground">
-                            <Search className="h-4 w-4" />
-                        </button>
-                    </form>
+                    {/* Desktop: Search bar with suggestions */}
+                    <SearchSuggestions className="hidden w-full md:block" inputClassName="h-9" />
 
                     {/* Desktop: Action buttons */}
                     <div className="hidden items-center gap-1 md:flex">
@@ -140,19 +113,9 @@ const AppHeaderLayout = ({ children }: AppHeaderLayoutProps) => {
                     </div>
                 </div>
 
-                {/* Mobile: Search bar below header */}
+                {/* Mobile: Search bar below header with suggestions */}
                 <div className="border-t px-4 py-2 md:hidden">
-                    <form onSubmit={handleMobileSearch} className="relative">
-                        <Input
-                            placeholder="Искать товары..."
-                            className="h-9 pr-9"
-                            value={mobileSearchQuery}
-                            onChange={(e) => setMobileSearchQuery(e.target.value)}
-                        />
-                        <button type="submit" className="absolute top-1/2 right-2.5 -translate-y-1/2 text-muted-foreground hover:text-foreground">
-                            <Search className="h-4 w-4" />
-                        </button>
-                    </form>
+                    <SearchSuggestions placeholder="Искать товары..." inputClassName="h-9" />
                 </div>
             </header>
 
