@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Auth\GoogleAuthController;
 use App\Http\Controllers\Auth\TelegramAuthController;
 use App\Http\Controllers\Client\AccountController;
 use App\Http\Controllers\Client\CartController;
@@ -15,6 +16,12 @@ use Illuminate\Support\Facades\Route;
 Route::middleware('guest')->group(function () {
     Route::get('/auth/telegram', [TelegramAuthController::class, 'show'])->name('auth.telegram');
     Route::post('/auth/telegram/callback', [TelegramAuthController::class, 'callback'])->name('auth.telegram.callback');
+
+    // Google auth
+    Route::get('/auth/google', [GoogleAuthController::class, 'redirect'])->name('auth.google');
+    Route::get('/auth/google/callback', [GoogleAuthController::class, 'callback'])->name('auth.google.callback');
+    Route::get('/auth/google/phone', [GoogleAuthController::class, 'showPhone'])->name('auth.google.phone');
+    Route::post('/auth/google/phone', [GoogleAuthController::class, 'storePhone'])->name('auth.google.phone.store');
 });
 
 // Public routes

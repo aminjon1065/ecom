@@ -95,7 +95,7 @@ export default function AccountProfile() {
                                 onChange={(e) =>
                                     setData('phone', e.target.value)
                                 }
-                                placeholder="+996 XXX XXX XXX"
+                                placeholder="+992 XXX XXX XXX"
                             />
                             {errors.phone && (
                                 <p className="text-sm text-destructive">

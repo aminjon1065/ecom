@@ -76,6 +76,7 @@ class User extends Authenticatable
         'phone',
         'telegram_id',
         'telegram_username',
+        'google_id',
         'is_active',
         'password',
     ];

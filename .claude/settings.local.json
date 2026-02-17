@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(composer require:*)",
+      "Bash(php artisan make:migration:*)",
+      "Bash(php artisan wayfinder:generate:*)",
+      "Bash(php artisan migrate:*)"
+    ]
+  }
+}

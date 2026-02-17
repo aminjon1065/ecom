@@ -59,13 +59,11 @@ export default function Register() {
                             </div>
 
                             <div className="grid gap-2">
-                                <Label htmlFor="phone">
-                                    Телефон{' '}
-                                    <span className="text-muted-foreground font-normal">(необязательно)</span>
-                                </Label>
+                                <Label htmlFor="phone">Телефон</Label>
                                 <Input
                                     id="phone"
                                     type="tel"
+                                    required
                                     tabIndex={3}
                                     autoComplete="tel"
                                     name="phone"
