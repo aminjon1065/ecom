@@ -4,18 +4,19 @@ namespace App\Http\Controllers\Admin\Product;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StoreProductRequest;
+use App\Http\Requests\UpdateProductRequest;
 use App\Models\Brand;
 use App\Models\Category;
 use App\Models\ChildCategory;
 use App\Models\Product;
 use App\Models\SubCategory;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Inertia\Inertia;
 
 class ProductController extends Controller
 {
-
-
     public function index(Request $request): \Inertia\Response
     {
         $products = Product::query()
@@ -42,11 +43,9 @@ class ProductController extends Controller
                         ->orWhere('sku', 'like', "%{$search}%");
                 });
             })
-            ->when($request->category_id, fn ($q, $v) =>
-            $q->where('category_id', $v)
+            ->when($request->category_id, fn ($q, $v) => $q->where('category_id', $v)
             )
-            ->when($request->brand_id, fn ($q, $v) =>
-            $q->where('brand_id', $v)
+            ->when($request->brand_id, fn ($q, $v) => $q->where('brand_id', $v)
             )
             ->when(
                 $request->filled('status'),
@@ -72,7 +71,7 @@ class ProductController extends Controller
     public function toggleStatus(Product $product): \Illuminate\Http\RedirectResponse
     {
         $product->update([
-            'status' => !$product->status,
+            'status' => ! $product->status,
         ]);
 
         return redirect()->back();
@@ -123,12 +122,12 @@ class ProductController extends Controller
             $data['thumb_image'] = $request->file('thumb_image')
                 ->store('products/thumbs', 'public');
         }
-        $data['slug'] = \Str::slug($data['name']);
+        $data['slug'] = Str::slug($data['name']);
 
         // GALLERY
         if ($request->hasFile('gallery')) {
             $data['gallery'] = collect($request->file('gallery'))
-                ->map(fn($file) => $file->store('products/gallery', 'public'))
+                ->map(fn ($file) => $file->store('products/gallery', 'public'))
                 ->toArray();
         }
 
@@ -139,6 +138,54 @@ class ProductController extends Controller
         }
 
         Product::create($data);
+
         return redirect()->route('admin.product.index')->with('success', 'Продукт добавлен');
+    }
+
+    public function edit(Product $product): \Inertia\Response
+    {
+        return Inertia::render('admin/product/edit', [
+            'product' => $product,
+            'categories' => Category::select('id', 'name')->get(),
+            'subCategories' => SubCategory::select('id', 'name', 'category_id')->get(),
+            'childCategories' => ChildCategory::select('id', 'name', 'sub_category_id')->get(),
+            'brands' => Brand::select('id', 'name')->where('status', true)->get(),
+        ]);
+    }
+
+    public function update(UpdateProductRequest $request, Product $product): \Illuminate\Http\RedirectResponse
+    {
+        $data = $request->validated();
+
+        // THUMB — only replace if a new file was uploaded
+        if ($request->hasFile('thumb_image')) {
+            if ($product->thumb_image) {
+                Storage::disk('public')->delete($product->thumb_image);
+            }
+            $data['thumb_image'] = $request->file('thumb_image')
+                ->store('products/thumbs', 'public');
+        } else {
+            unset($data['thumb_image']);
+        }
+
+        // Update slug when name changes
+        $data['slug'] = Str::slug($data['name']);
+
+        // GALLERY
+        if ($request->hasFile('gallery')) {
+            $data['gallery'] = collect($request->file('gallery'))
+                ->map(fn ($file) => $file->store('products/gallery', 'public'))
+                ->toArray();
+        }
+
+        try {
+            $data['long_description'] = json_decode($data['long_description'], true, 512, JSON_THROW_ON_ERROR);
+        } catch (\JsonException $e) {
+            \Log::error($e->getMessage());
+        }
+
+        $product->update($data);
+
+        return redirect()->route('admin.product.index')->with('success', 'Продукт обновлён');
     }
 }

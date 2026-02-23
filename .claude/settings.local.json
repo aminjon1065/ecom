@@ -4,7 +4,13 @@
       "Bash(composer require:*)",
       "Bash(php artisan make:migration:*)",
       "Bash(php artisan wayfinder:generate:*)",
-      "Bash(php artisan migrate:*)"
+      "Bash(php artisan migrate:*)",
+      "Bash(grep:*)",
+      "Bash(php artisan about:*)",
+      "Bash(php artisan route:list:*)",
+      "Bash(php artisan config:clear:*)",
+      "Bash(php artisan:*)",
+      "Bash(npx tsc:*)"
     ]
   }
 }

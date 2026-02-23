@@ -1,6 +1,6 @@
 import { Editor } from '@/components/blocks/editor-00/editor';
-import VendorLayout from '@/layouts/app/vendor/app-layout';
-import vendorProductRoutes from '@/routes/vendor/product';
+import AppLayout from '@/layouts/app/admin/app-layout';
+import productRoutes from '@/routes/admin/product';
 import { Brand } from '@/types/brand';
 import { Category } from '@/types/category';
 import { ChildCategory } from '@/types/child-category';
@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button';
 import {
     Card,
     CardContent,
+    CardDescription,
     CardHeader,
     CardTitle,
 } from '@/components/ui/card';
@@ -25,36 +26,40 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
-import { type BreadcrumbItem } from '@/types';
 import { initialValue } from '@/pages/editor-00';
 
-interface ProductData {
+interface ProductFull {
     id: number;
     name: string;
     code: number;
+    sku: string | null;
     thumb_image: string;
     category_id: number;
     sub_category_id: number | null;
     child_category_id: number | null;
     brand_id: number;
     qty: number;
-    sku: string | null;
     price: number;
     cost_price: number | null;
     offer_price: number | null;
     offer_start_date: string | null;
     offer_end_date: string | null;
-    short_description: string;
+    short_description: string | null;
     long_description: string;
     video_link: string | null;
+    first_source_link: string | null;
+    second_source_link: string | null;
     seo_title: string | null;
     seo_description: string | null;
     product_type: string | null;
+    status: boolean;
+    is_approved: boolean;
 }
 
 interface Props {
-    product: ProductData;
+    product: ProductFull;
     categories: Category[];
     subCategories: SubCategory[];
     childCategories: ChildCategory[];
@@ -68,22 +73,13 @@ const productTypes = [
     { name: 'Лучший' },
 ];
 
-export default function VendorEditProduct({
+export default function AdminEditProduct({
     product,
     categories,
     subCategories,
     childCategories,
     brands,
 }: Props) {
-    const breadcrumbs: BreadcrumbItem[] = [
-        { title: 'Дашборд', href: '/vendor' },
-        { title: 'Товары', href: '/vendor/products' },
-        {
-            title: 'Редактирование',
-            href: `/vendor/products/${product.id}/edit`,
-        },
-    ];
-
     const [thumbPreview, setThumbPreview] = useState<string | null>(null);
 
     const parsedLongDesc = useMemo(() => {
@@ -98,7 +94,9 @@ export default function VendorEditProduct({
         _method: 'PUT',
         name: product.name,
         code: product.code,
+        sku: product.sku ?? '',
         thumb_image: null as File | null,
+        gallery: [] as File[],
         category_id: String(product.category_id),
         sub_category_id: product.sub_category_id
             ? String(product.sub_category_id)
@@ -108,19 +106,21 @@ export default function VendorEditProduct({
             : '',
         brand_id: String(product.brand_id),
         qty: product.qty,
-        sku: product.sku ?? '',
         price: product.price,
         cost_price: product.cost_price ?? 0,
         offer_price: product.offer_price ?? 0,
         offer_start_date: product.offer_start_date,
         offer_end_date: product.offer_end_date,
-        short_description: product.short_description,
-        long_description:
-            product.long_description || JSON.stringify(initialValue),
+        short_description: product.short_description ?? '',
+        long_description: product.long_description || JSON.stringify(initialValue),
         video_link: product.video_link ?? '',
+        first_source_link: product.first_source_link ?? '',
+        second_source_link: product.second_source_link ?? '',
         seo_title: product.seo_title ?? '',
         seo_description: product.seo_description ?? '',
-        product_type: product.product_type ?? 'Новый',
+        product_type: product.product_type ?? 'Топ',
+        status: product.status,
+        is_approved: product.is_approved,
     });
 
     useEffect(() => {
@@ -147,21 +147,24 @@ export default function VendorEditProduct({
 
     function submit(e: React.FormEvent) {
         e.preventDefault();
-        post(vendorProductRoutes.update(product.id).url, { forceFormData: true });
+        post(productRoutes.update(product.id).url, { forceFormData: true });
     }
 
     return (
-        <VendorLayout breadcrumbs={breadcrumbs}>
+        <AppLayout>
             <Head title={`Редактировать: ${product.name}`} />
 
             <form
                 onSubmit={submit}
-                className="mx-auto w-full max-w-5xl space-y-6"
+                className="mx-auto w-full max-w-10/12 space-y-8"
             >
                 {/* BASIC */}
                 <Card>
                     <CardHeader>
                         <CardTitle>Основная информация</CardTitle>
+                        <CardDescription>
+                            Название, код, кол-во и складской номер продукта
+                        </CardDescription>
                     </CardHeader>
                     <CardContent className="grid gap-4 md:grid-cols-2">
                         <div className="space-y-2">
@@ -179,8 +182,9 @@ export default function VendorEditProduct({
                                 </p>
                             )}
                         </div>
-                        <div className="flex gap-3">
-                            <div className="flex-1 space-y-2">
+
+                        <div className="w-full justify-between space-x-2 md:flex">
+                            <div className="w-full space-y-2">
                                 <Label htmlFor="code">Код</Label>
                                 <Input
                                     id="code"
@@ -196,8 +200,8 @@ export default function VendorEditProduct({
                                     </p>
                                 )}
                             </div>
-                            <div className="flex-1 space-y-2">
-                                <Label htmlFor="sku">SKU</Label>
+                            <div className="w-full space-y-2">
+                                <Label htmlFor="sku">Складской номер</Label>
                                 <Input
                                     id="sku"
                                     value={data.sku}
@@ -206,8 +210,10 @@ export default function VendorEditProduct({
                                     }
                                 />
                             </div>
-                            <div className="flex-1 space-y-2">
-                                <Label htmlFor="qty">Кол-во</Label>
+                            <div className="w-full space-y-2">
+                                <Label htmlFor="qty">
+                                    Количество на складе
+                                </Label>
                                 <Input
                                     id="qty"
                                     type="number"
@@ -229,7 +235,7 @@ export default function VendorEditProduct({
                 {/* CATEGORY & BRAND */}
                 <Card>
                     <CardHeader>
-                        <CardTitle>Категория и бренд</CardTitle>
+                        <CardTitle>Категории и бренд</CardTitle>
                     </CardHeader>
                     <CardContent className="grid gap-4 md:grid-cols-5">
                         <div className="space-y-2">
@@ -243,7 +249,7 @@ export default function VendorEditProduct({
                                 }}
                             >
                                 <SelectTrigger className="w-full">
-                                    <SelectValue />
+                                    <SelectValue placeholder="Категория" />
                                 </SelectTrigger>
                                 <SelectContent>
                                     {categories.map((c) => (
@@ -274,7 +280,7 @@ export default function VendorEditProduct({
                                 }}
                             >
                                 <SelectTrigger className="w-full">
-                                    <SelectValue placeholder="Выберите" />
+                                    <SelectValue placeholder="Подкатегория" />
                                 </SelectTrigger>
                                 <SelectContent>
                                     {filteredSub.map((s) => (
@@ -290,7 +296,7 @@ export default function VendorEditProduct({
                         </div>
 
                         <div className="space-y-2">
-                            <Label>Дочерняя</Label>
+                            <Label>Дочерняя категория</Label>
                             <Select
                                 value={data.child_category_id}
                                 disabled={!data.sub_category_id}
@@ -299,7 +305,7 @@ export default function VendorEditProduct({
                                 }
                             >
                                 <SelectTrigger className="w-full">
-                                    <SelectValue placeholder="Выберите" />
+                                    <SelectValue placeholder="Дочерняя категория" />
                                 </SelectTrigger>
                                 <SelectContent>
                                     {filteredChild.map((c) => (
@@ -321,7 +327,7 @@ export default function VendorEditProduct({
                                 onValueChange={(v) => setData('brand_id', v)}
                             >
                                 <SelectTrigger className="w-full">
-                                    <SelectValue />
+                                    <SelectValue placeholder="Бренд" />
                                 </SelectTrigger>
                                 <SelectContent>
                                     {brands.map((b) => (
@@ -342,7 +348,7 @@ export default function VendorEditProduct({
                         </div>
 
                         <div className="space-y-2">
-                            <Label>Тип</Label>
+                            <Label>Тип продукта</Label>
                             <Select
                                 value={data.product_type}
                                 onValueChange={(v) =>
@@ -371,11 +377,15 @@ export default function VendorEditProduct({
                 <Card>
                     <CardHeader>
                         <CardTitle>Цены</CardTitle>
+                        <CardDescription>
+                            Цена, себестоимость и скидки
+                        </CardDescription>
                     </CardHeader>
-                    <CardContent className="grid gap-4 md:grid-cols-3">
+                    <CardContent className="grid gap-4 md:grid-cols-5">
                         <div className="space-y-2">
-                            <Label>Цена</Label>
+                            <Label htmlFor="price">Цена</Label>
                             <Input
+                                id="price"
                                 type="number"
                                 value={data.price}
                                 onChange={(e) =>
@@ -388,9 +398,11 @@ export default function VendorEditProduct({
                                 </p>
                             )}
                         </div>
+
                         <div className="space-y-2">
-                            <Label>Себестоимость</Label>
+                            <Label htmlFor="cost_price">Себестоимость</Label>
                             <Input
+                                id="cost_price"
                                 type="number"
                                 value={data.cost_price}
                                 onChange={(e) =>
@@ -401,9 +413,11 @@ export default function VendorEditProduct({
                                 }
                             />
                         </div>
+
                         <div className="space-y-2">
-                            <Label>Цена со скидкой</Label>
+                            <Label htmlFor="offer_price">Скидка</Label>
                             <Input
+                                id="offer_price"
                                 type="number"
                                 value={data.offer_price}
                                 onChange={(e) =>
@@ -414,6 +428,7 @@ export default function VendorEditProduct({
                                 }
                             />
                         </div>
+
                         <div className="flex flex-col gap-2">
                             <Label>Дата начала акции</Label>
                             <DatePicker
@@ -425,6 +440,7 @@ export default function VendorEditProduct({
                                 placeholder="Начало"
                             />
                         </div>
+
                         <div className="flex flex-col gap-2">
                             <Label>Дата окончания акции</Label>
                             <DatePicker
@@ -437,27 +453,25 @@ export default function VendorEditProduct({
                     </CardContent>
                 </Card>
 
-                {/* DESCRIPTION */}
+                {/* DESCRIPTIONS */}
                 <Card>
                     <CardHeader>
-                        <CardTitle>Описание</CardTitle>
+                        <CardTitle>Описание продукта</CardTitle>
                     </CardHeader>
-                    <CardContent className="space-y-4">
-                        <div className="space-y-2">
-                            <Label>Короткое описание</Label>
+                    <CardContent className="flex flex-col items-center justify-between space-y-4">
+                        <div className="w-full space-y-2">
+                            <Label htmlFor="short_description">
+                                Короткое описание
+                            </Label>
                             <Input
+                                id="short_description"
                                 value={data.short_description}
                                 onChange={(e) =>
                                     setData('short_description', e.target.value)
                                 }
                             />
-                            {errors.short_description && (
-                                <p className="text-xs text-destructive">
-                                    {errors.short_description}
-                                </p>
-                            )}
                         </div>
-                        <div className="space-y-2">
+                        <div className="w-full">
                             <Label>Полное описание</Label>
                             <Editor
                                 editorSerializedState={parsedLongDesc}
@@ -468,6 +482,11 @@ export default function VendorEditProduct({
                                     )
                                 }
                             />
+                            {errors.long_description && (
+                                <p className="text-xs text-destructive">
+                                    {errors.long_description}
+                                </p>
+                            )}
                         </div>
                     </CardContent>
                 </Card>
@@ -475,21 +494,23 @@ export default function VendorEditProduct({
                 {/* SEO */}
                 <Card>
                     <CardHeader>
-                        <CardTitle>SEO</CardTitle>
+                        <CardTitle>SEO (поисковая оптимизация)</CardTitle>
                     </CardHeader>
-                    <CardContent className="space-y-4">
-                        <div className="space-y-2">
-                            <Label>SEO Заголовок</Label>
+                    <CardContent className="flex flex-col items-center justify-between space-y-4">
+                        <div className="w-full space-y-2">
+                            <Label htmlFor="seo_title">SEO Заголовок</Label>
                             <Input
+                                id="seo_title"
                                 value={data.seo_title}
                                 onChange={(e) =>
                                     setData('seo_title', e.target.value)
                                 }
                             />
                         </div>
-                        <div className="space-y-2">
-                            <Label>SEO Описание</Label>
+                        <div className="w-full space-y-2">
+                            <Label htmlFor="seo_description">SEO Описание</Label>
                             <Textarea
+                                id="seo_description"
                                 value={data.seo_description}
                                 onChange={(e) =>
                                     setData('seo_description', e.target.value)
@@ -499,20 +520,26 @@ export default function VendorEditProduct({
                     </CardContent>
                 </Card>
 
-                {/* IMAGE */}
+                {/* MEDIA */}
                 <Card>
                     <CardHeader>
-                        <CardTitle>Изображение</CardTitle>
+                        <CardTitle>Медиа</CardTitle>
+                        <CardDescription>
+                            Основное изображение продукта
+                        </CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
+                        {/* Current image */}
                         <div className="space-y-2">
                             <Label>Текущее изображение</Label>
                             <img
                                 src={`/storage/${product.thumb_image}`}
-                                className="h-24 rounded border object-contain"
                                 alt={product.name}
+                                className="h-32 rounded border object-contain"
                             />
                         </div>
+
+                        {/* Replace image */}
                         <div className="space-y-2">
                             <Label>Новое изображение (необязательно)</Label>
                             <Input
@@ -535,10 +562,81 @@ export default function VendorEditProduct({
                             {thumbPreview && (
                                 <img
                                     src={thumbPreview}
-                                    className="h-24 rounded border object-contain"
+                                    className="h-32 rounded border object-contain"
                                     alt="Preview"
                                 />
                             )}
+                        </div>
+                    </CardContent>
+                </Card>
+
+                {/* STATUS, APPROVAL & SOURCES */}
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Статус, одобрение и источники</CardTitle>
+                        <CardDescription>
+                            Видимость в магазине и ссылки поставщиков
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent className="flex flex-col justify-between space-y-3">
+                        <div className="flex items-center justify-between gap-2 rounded-md border p-3">
+                            <Label htmlFor="status">Статус (активен)</Label>
+                            <Switch
+                                id="status"
+                                checked={data.status}
+                                onCheckedChange={(v) => setData('status', v)}
+                            />
+                        </div>
+
+                        <div className="flex items-center justify-between gap-2 rounded-md border p-3">
+                            <Label htmlFor="is_approved">Одобрен</Label>
+                            <Switch
+                                id="is_approved"
+                                checked={data.is_approved}
+                                onCheckedChange={(v) =>
+                                    setData('is_approved', v)
+                                }
+                            />
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label htmlFor="video_link">Ссылка на видео</Label>
+                            <Input
+                                id="video_link"
+                                value={data.video_link}
+                                onChange={(e) =>
+                                    setData('video_link', e.target.value)
+                                }
+                            />
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label htmlFor="first_source_link">
+                                Первый источник
+                            </Label>
+                            <Input
+                                id="first_source_link"
+                                value={data.first_source_link}
+                                onChange={(e) =>
+                                    setData('first_source_link', e.target.value)
+                                }
+                            />
+                        </div>
+
+                        <div className="space-y-2">
+                            <Label htmlFor="second_source_link">
+                                Второй источник
+                            </Label>
+                            <Input
+                                id="second_source_link"
+                                value={data.second_source_link}
+                                onChange={(e) =>
+                                    setData(
+                                        'second_source_link',
+                                        e.target.value,
+                                    )
+                                }
+                            />
                         </div>
                     </CardContent>
                 </Card>
@@ -556,6 +654,6 @@ export default function VendorEditProduct({
                     </Button>
                 </div>
             </form>
-        </VendorLayout>
+        </AppLayout>
     );
 }

@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Auth\GoogleAuthController;
+use App\Http\Controllers\Auth\PhoneAuthController;
 use App\Http\Controllers\Auth\TelegramAuthController;
 use App\Http\Controllers\Client\AccountController;
 use App\Http\Controllers\Client\CartController;
@@ -22,6 +23,15 @@ Route::middleware('guest')->group(function () {
     Route::get('/auth/google/callback', [GoogleAuthController::class, 'callback'])->name('auth.google.callback');
     Route::get('/auth/google/phone', [GoogleAuthController::class, 'showPhone'])->name('auth.google.phone');
     Route::post('/auth/google/phone', [GoogleAuthController::class, 'storePhone'])->name('auth.google.phone.store');
+
+    // Phone (OTP) auth — throttle OTP sends to 5 per minute per IP
+    Route::get('/auth/phone', [PhoneAuthController::class, 'showLogin'])->name('auth.phone');
+    Route::post('/auth/phone/otp', [PhoneAuthController::class, 'sendOtp'])
+        ->middleware('throttle:5,1')
+        ->name('auth.phone.otp');
+    Route::post('/auth/phone/verify', [PhoneAuthController::class, 'verifyOtp'])
+        ->middleware('throttle:10,1')
+        ->name('auth.phone.verify');
 });
 
 // Public routes

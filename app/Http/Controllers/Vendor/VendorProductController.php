@@ -62,7 +62,7 @@ class VendorProductController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'code' => 'required|integer|unique:products,code',
-            'thumb_image' => 'required|image|max:2048',
+            'thumb_image' => 'required|image|max:5120',
             'category_id' => 'required|exists:categories,id',
             'sub_category_id' => 'nullable|exists:sub_categories,id',
             'child_category_id' => 'nullable|exists:child_categories,id',
@@ -83,7 +83,7 @@ class VendorProductController extends Controller
         ]);
 
         $validated['vendor_id'] = $vendor->id;
-        $validated['slug'] = Str::slug($validated['name']) . '-' . Str::random(5);
+        $validated['slug'] = Str::slug($validated['name']).'-'.Str::random(5);
         $validated['is_approved'] = false;
         $validated['status'] = true;
 
@@ -98,8 +98,7 @@ class VendorProductController extends Controller
 
     public function edit(Product $product): Response
     {
-        $vendor = Auth::user()->vendor;
-        abort_unless($product->vendor_id === $vendor->id, 403);
+        $this->authorize('update', $product);
 
         return Inertia::render('vendor/product/edit', [
             'product' => $product,
@@ -112,13 +111,12 @@ class VendorProductController extends Controller
 
     public function update(Request $request, Product $product): RedirectResponse
     {
-        $vendor = Auth::user()->vendor;
-        abort_unless($product->vendor_id === $vendor->id, 403);
+        $this->authorize('update', $product);
 
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'code' => 'required|integer|unique:products,code,' . $product->id,
-            'thumb_image' => 'nullable|image|max:2048',
+            'code' => 'required|integer|unique:products,code,'.$product->id,
+            'thumb_image' => 'nullable|image|max:5120',
             'category_id' => 'required|exists:categories,id',
             'sub_category_id' => 'nullable|exists:sub_categories,id',
             'child_category_id' => 'nullable|exists:child_categories,id',
@@ -143,7 +141,14 @@ class VendorProductController extends Controller
                 Storage::disk('public')->delete($product->thumb_image);
             }
             $validated['thumb_image'] = $request->file('thumb_image')->store('products', 'public');
+        } else {
+            // No new file uploaded — keep the existing image, don't overwrite with null.
+            unset($validated['thumb_image']);
         }
+
+        // Any vendor edit resets approval — admin must re-approve before the
+        // product becomes visible on the storefront again.
+        $validated['is_approved'] = false;
 
         $product->update($validated);
 
@@ -152,8 +157,7 @@ class VendorProductController extends Controller
 
     public function destroy(Product $product): RedirectResponse
     {
-        $vendor = Auth::user()->vendor;
-        abort_unless($product->vendor_id === $vendor->id, 403);
+        $this->authorize('delete', $product);
 
         if ($product->thumb_image) {
             Storage::disk('public')->delete($product->thumb_image);
@@ -166,10 +170,9 @@ class VendorProductController extends Controller
 
     public function toggleStatus(Product $product): RedirectResponse
     {
-        $vendor = Auth::user()->vendor;
-        abort_unless($product->vendor_id === $vendor->id, 403);
+        $this->authorize('toggleStatus', $product);
 
-        $product->update(['status' => !$product->status]);
+        $product->update(['status' => ! $product->status]);
 
         return redirect()->back();
     }

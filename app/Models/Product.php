@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\ProductType;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -45,6 +46,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property-read int|null $reviews_count
  * @property-read \App\Models\SubCategory|null $subCategory
  * @property-read \App\Models\Vendor|null $vendor
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Product newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Product newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Product query()
@@ -77,11 +79,11 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Product whereUpdatedAt($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Product whereVendorId($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Product whereVideoLink($value)
+ *
  * @mixin \Eloquent
  */
 class Product extends Model
 {
-
     protected $fillable = [
         'name',
         'code',
@@ -108,7 +110,7 @@ class Product extends Model
         'seo_title',
         'seo_description',
         'first_source_link',
-        'second_source_link'
+        'second_source_link',
     ];
 
     protected $casts = [
@@ -120,9 +122,8 @@ class Product extends Model
         'is_approved' => 'boolean',
         'offer_start_date' => 'date',
         'offer_end_date' => 'date',
+        'product_type' => ProductType::class,
     ];
-
-
 
     public function category(): BelongsTo
     {
@@ -158,5 +159,4 @@ class Product extends Model
     {
         return $this->hasMany(ProductReview::class);
     }
-
 }

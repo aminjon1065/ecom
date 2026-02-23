@@ -14,10 +14,10 @@ use Illuminate\Validation\Rule;
  * @property mixed $status
  * @property mixed $is_approved
  */
-class StoreProductRequest extends FormRequest
+class UpdateProductRequest extends FormRequest
 {
     /**
-     * Only admins may create products through this request.
+     * Only the admin may use this request (admin product edit).
      * Vendors use VendorProductController with its own inline validation.
      */
     public function authorize(): bool
@@ -48,6 +48,9 @@ class StoreProductRequest extends FormRequest
      */
     public function rules(): array
     {
+        /** @var \App\Models\Product $product */
+        $product = $this->route('product');
+
         return [
             // BASIC
             'name' => ['required', 'string', 'max:255'],
@@ -78,8 +81,8 @@ class StoreProductRequest extends FormRequest
             'seo_title' => ['nullable', 'string', 'max:255'],
             'seo_description' => ['nullable', 'string', 'max:1000'],
 
-            // MEDIA — max is in KB: 5120 KB = 5 MB
-            'thumb_image' => ['required', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
+            // MEDIA — image optional on update; max: 5120 KB = 5 MB
+            'thumb_image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
             'gallery' => ['nullable', 'array'],
             'gallery.*' => ['image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
 
@@ -87,7 +90,7 @@ class StoreProductRequest extends FormRequest
             'status' => ['boolean'],
             'is_approved' => ['boolean'],
 
-            // ENUM — driven by ProductType, no more magic strings
+            // ENUM
             'product_type' => [
                 'required',
                 Rule::in(ProductType::values()),

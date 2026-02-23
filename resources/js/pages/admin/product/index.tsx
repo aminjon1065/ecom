@@ -17,7 +17,7 @@ import { Category } from '@/types/category';
 import { PaginatedResponse } from '@/types/pagination';
 import { Product } from '@/types/product';
 import { router } from '@inertiajs/react';
-import { Check, X } from 'lucide-react';
+import { Check, Pencil, X } from 'lucide-react';
 import { useRef, useState } from 'react';
 import { toast } from 'sonner';
 
@@ -192,6 +192,22 @@ const columns: Column<Product>[] = [
                     )
                 }
             />
+        ),
+    },
+    {
+        key: 'id',
+        label: '',
+        className: 'w-[48px] text-center',
+        render: (row) => (
+            <Button
+                size="icon"
+                variant="ghost"
+                className="h-8 w-8"
+                onClick={() => router.visit(product.edit(row.id).url)}
+                title="Редактировать"
+            >
+                <Pencil className="h-4 w-4" />
+            </Button>
         ),
     },
 ];

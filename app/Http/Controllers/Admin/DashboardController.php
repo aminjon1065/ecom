@@ -10,7 +10,9 @@ use App\Models\User;
 use App\Models\Vendor;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -98,11 +100,23 @@ class DashboardController extends Controller
     {
         $vendor->update(['status' => true]);
 
+        Log::info('Admin approved vendor', [
+            'admin_id' => Auth::id(),
+            'vendor_id' => $vendor->id,
+            'shop_name' => $vendor->shop_name,
+        ]);
+
         return redirect()->back();
     }
 
     public function rejectVendor(Vendor $vendor): RedirectResponse
     {
+        Log::warning('Admin rejected (deleted) vendor', [
+            'admin_id' => Auth::id(),
+            'vendor_id' => $vendor->id,
+            'shop_name' => $vendor->shop_name,
+        ]);
+
         $vendor->delete();
 
         return redirect()->back();
@@ -112,6 +126,13 @@ class DashboardController extends Controller
     {
         $product->update(['is_approved' => true]);
 
+        Log::info('Admin approved product', [
+            'admin_id' => Auth::id(),
+            'product_id' => $product->id,
+            'name' => $product->name,
+            'vendor_id' => $product->vendor_id,
+        ]);
+
         return redirect()->back();
     }
 
@@ -119,11 +140,21 @@ class DashboardController extends Controller
     {
         $productReview->update(['status' => true]);
 
+        Log::info('Admin approved review', [
+            'admin_id' => Auth::id(),
+            'review_id' => $productReview->id,
+        ]);
+
         return redirect()->back();
     }
 
     public function deleteReview(ProductReview $productReview): RedirectResponse
     {
+        Log::warning('Admin deleted review', [
+            'admin_id' => Auth::id(),
+            'review_id' => $productReview->id,
+        ]);
+
         $productReview->delete();
 
         return redirect()->back();

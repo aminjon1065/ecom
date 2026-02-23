@@ -1,14 +1,15 @@
-import { Head, Link, router } from '@inertiajs/react';
-import AppHeaderLayout from '@/layouts/app/client/app-header-layout';
 import { ProductCard } from '@/components/client/product-card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { Separator } from '@/components/ui/separator';
-import { Star, Heart, ShoppingCart, ChevronRight } from 'lucide-react';
-import { useState } from 'react';
+import { Textarea } from '@/components/ui/textarea';
+import AppHeaderLayout from '@/layouts/app/client/app-header-layout';
+import { lexicalDescriptionToHtml } from '@/lib/lexical-description';
+import { Head, Link, router } from '@inertiajs/react';
+import { ChevronRight, Heart, ShoppingCart, Star } from 'lucide-react';
+import { useMemo, useState } from 'react';
 
 interface Product {
     id: number;
@@ -28,7 +29,11 @@ interface Product {
     category?: { id: number; name: string } | null;
     sub_category?: { id: number; name: string } | null;
     brand?: { id: number; name: string } | null;
-    vendor?: { id: number; shop_name: string; user: { id: number; name: string } } | null;
+    vendor?: {
+        id: number;
+        shop_name: string;
+        user: { id: number; name: string };
+    } | null;
     images: { id: number; image: string }[];
     reviews_avg_rating?: number | null;
     reviews_count?: number;
@@ -50,24 +55,43 @@ interface Props {
     isInCart: boolean;
 }
 
-export default function ProductShow({ product, reviews, relatedProducts, isInWishlist, isInCart }: Props) {
-    const imgPrefix = (path: string) => path.startsWith('http') ? path : `/storage/${path}`;
-    const [selectedImage, setSelectedImage] = useState(imgPrefix(product.thumb_image));
+export default function ProductShow({
+    product,
+    reviews,
+    relatedProducts,
+    isInWishlist,
+    isInCart,
+}: Props) {
+    const imgPrefix = (path: string) =>
+        path.startsWith('http') ? path : `/storage/${path}`;
+    const [selectedImage, setSelectedImage] = useState(
+        imgPrefix(product.thumb_image),
+    );
     const [quantity, setQuantity] = useState(1);
-    const [activeTab, setActiveTab] = useState<'description' | 'reviews'>('description');
+    const [activeTab, setActiveTab] = useState<'description' | 'reviews'>(
+        'description',
+    );
     const [reviewRating, setReviewRating] = useState(0);
     const [reviewText, setReviewText] = useState('');
     const [hoveredStar, setHoveredStar] = useState(0);
+    const productDescriptionHtml = useMemo(
+        () => lexicalDescriptionToHtml(product.long_description),
+        [product.long_description],
+    );
 
     // All images: thumb_image + product.images
     const allImages = [
         imgPrefix(product.thumb_image),
-        ...product.images.map(img => imgPrefix(img.image))
+        ...product.images.map((img) => imgPrefix(img.image)),
     ];
 
     // Check if offer is active
     const isOfferActive = () => {
-        if (!product.offer_price || !product.offer_start_date || !product.offer_end_date) {
+        if (
+            !product.offer_price ||
+            !product.offer_start_date ||
+            !product.offer_end_date
+        ) {
             return false;
         }
         const now = new Date();
@@ -76,19 +100,25 @@ export default function ProductShow({ product, reviews, relatedProducts, isInWis
         return now >= start && now <= end;
     };
 
-    const currentPrice = isOfferActive() && product.offer_price ? product.offer_price : product.price;
-    const hasDiscount = isOfferActive() && product.offer_price && product.offer_price < product.price;
+    const currentPrice =
+        isOfferActive() && product.offer_price
+            ? product.offer_price
+            : product.price;
+    const hasDiscount =
+        isOfferActive() &&
+        product.offer_price &&
+        product.offer_price < product.price;
 
     const handleAddToCart = () => {
         router.post('/cart', {
             product_id: product.id,
-            quantity: quantity
+            quantity: quantity,
         });
     };
 
     const handleToggleWishlist = () => {
         router.post('/wishlist', {
-            product_id: product.id
+            product_id: product.id,
         });
     };
 
@@ -98,27 +128,38 @@ export default function ProductShow({ product, reviews, relatedProducts, isInWis
             alert('Пожалуйста, выберите рейтинг');
             return;
         }
-        router.post(`/products/${product.id}/review`, {
-            rating: reviewRating,
-            review: reviewText
-        }, {
-            onSuccess: () => {
-                setReviewRating(0);
-                setReviewText('');
-            }
-        });
+        router.post(
+            `/products/${product.id}/review`,
+            {
+                rating: reviewRating,
+                review: reviewText,
+            },
+            {
+                onSuccess: () => {
+                    setReviewRating(0);
+                    setReviewText('');
+                },
+            },
+        );
     };
 
-    const renderStars = (rating: number, interactive: boolean = false, onRate?: (rating: number) => void) => {
+    const renderStars = (
+        rating: number,
+        interactive: boolean = false,
+        onRate?: (rating: number) => void,
+    ) => {
         return (
             <div className="flex items-center gap-1">
                 {[1, 2, 3, 4, 5].map((star) => (
                     <Star
                         key={star}
-                        className={`w-5 h-5 ${
-                            interactive ? 'cursor-pointer transition-colors' : ''
+                        className={`h-5 w-5 ${
+                            interactive
+                                ? 'cursor-pointer transition-colors'
+                                : ''
                         } ${
-                            star <= (interactive ? (hoveredStar || reviewRating) : rating)
+                            star <=
+                            (interactive ? hoveredStar || reviewRating : rating)
                                 ? 'fill-yellow-400 text-yellow-400'
                                 : 'fill-none text-gray-300'
                         }`}
@@ -137,35 +178,40 @@ export default function ProductShow({ product, reviews, relatedProducts, isInWis
 
             <div className="container mx-auto px-4 py-6">
                 {/* Breadcrumb */}
-                <nav className="flex items-center gap-2 text-sm text-gray-600 mb-6">
+                <nav className="mb-6 flex items-center gap-2 text-sm text-gray-600">
                     <Link href="/" className="hover:text-gray-900">
                         Главная
                     </Link>
-                    <ChevronRight className="w-4 h-4" />
+                    <ChevronRight className="h-4 w-4" />
                     <Link href="/products" className="hover:text-gray-900">
                         Каталог
                     </Link>
                     {product.category && (
                         <>
-                            <ChevronRight className="w-4 h-4" />
-                            <Link href={`/products?category=${product.category.id}`} className="hover:text-gray-900">
+                            <ChevronRight className="h-4 w-4" />
+                            <Link
+                                href={`/products?category=${product.category.id}`}
+                                className="hover:text-gray-900"
+                            >
                                 {product.category.name}
                             </Link>
                         </>
                     )}
-                    <ChevronRight className="w-4 h-4" />
-                    <span className="text-gray-900 font-medium">{product.name}</span>
+                    <ChevronRight className="h-4 w-4" />
+                    <span className="font-medium text-gray-900">
+                        {product.name}
+                    </span>
                 </nav>
 
                 {/* Product Main Section */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
+                <div className="mb-12 grid grid-cols-1 gap-8 lg:grid-cols-2">
                     {/* Image Gallery */}
                     <div className="space-y-4">
-                        <div className="aspect-square rounded-lg overflow-hidden bg-gray-100 border">
+                        <div className="aspect-square overflow-hidden rounded-lg border bg-gray-100">
                             <img
                                 src={selectedImage}
                                 alt={product.name}
-                                className="w-full h-full object-cover"
+                                className="h-full w-full object-cover"
                             />
                         </div>
                         <div className="grid grid-cols-5 gap-2">
@@ -173,7 +219,7 @@ export default function ProductShow({ product, reviews, relatedProducts, isInWis
                                 <button
                                     key={index}
                                     onClick={() => setSelectedImage(image)}
-                                    className={`aspect-square rounded-lg overflow-hidden border-2 transition-all ${
+                                    className={`aspect-square overflow-hidden rounded-lg border-2 transition-all ${
                                         selectedImage === image
                                             ? 'border-primary'
                                             : 'border-gray-200 hover:border-gray-300'
@@ -182,7 +228,7 @@ export default function ProductShow({ product, reviews, relatedProducts, isInWis
                                     <img
                                         src={image}
                                         alt={`${product.name} - ${index + 1}`}
-                                        className="w-full h-full object-cover"
+                                        className="h-full w-full object-cover"
                                     />
                                 </button>
                             ))}
@@ -192,16 +238,27 @@ export default function ProductShow({ product, reviews, relatedProducts, isInWis
                     {/* Product Info */}
                     <div className="space-y-6">
                         <div>
-                            <h1 className="text-3xl font-bold mb-2">{product.name}</h1>
-                            {product.reviews_count && product.reviews_count > 0 && (
-                                <div className="flex items-center gap-2 mb-4">
-                                    {renderStars(product.reviews_avg_rating || 0)}
-                                    <span className="text-sm text-gray-600">
-                                        ({product.reviews_count} {product.reviews_count === 1 ? 'отзыв' : 'отзыва'})
-                                    </span>
-                                </div>
-                            )}
-                            <p className="text-gray-600">{product.short_description}</p>
+                            <h1 className="mb-2 text-3xl font-bold">
+                                {product.name}
+                            </h1>
+                            {product.reviews_count &&
+                                product.reviews_count > 0 && (
+                                    <div className="mb-4 flex items-center gap-2">
+                                        {renderStars(
+                                            product.reviews_avg_rating || 0,
+                                        )}
+                                        <span className="text-sm text-gray-600">
+                                            ({product.reviews_count}{' '}
+                                            {product.reviews_count === 1
+                                                ? 'отзыв'
+                                                : 'отзыва'}
+                                            )
+                                        </span>
+                                    </div>
+                                )}
+                            <p className="text-gray-600">
+                                {product.short_description}
+                            </p>
                         </div>
 
                         {/* Price */}
@@ -215,8 +272,17 @@ export default function ProductShow({ product, reviews, relatedProducts, isInWis
                                 </span>
                             )}
                             {hasDiscount && (
-                                <Badge variant="destructive" className="text-sm">
-                                    -{Math.round(((product.price - currentPrice) / product.price) * 100)}%
+                                <Badge
+                                    variant="destructive"
+                                    className="text-sm"
+                                >
+                                    -
+                                    {Math.round(
+                                        ((product.price - currentPrice) /
+                                            product.price) *
+                                            100,
+                                    )}
+                                    %
                                 </Badge>
                             )}
                         </div>
@@ -227,26 +293,42 @@ export default function ProductShow({ product, reviews, relatedProducts, isInWis
                         <div className="space-y-2 text-sm">
                             {product.sku && (
                                 <div className="flex gap-2">
-                                    <span className="text-gray-600">Артикул:</span>
-                                    <span className="font-medium">{product.sku}</span>
+                                    <span className="text-gray-600">
+                                        Артикул:
+                                    </span>
+                                    <span className="font-medium">
+                                        {product.sku}
+                                    </span>
                                 </div>
                             )}
                             {product.brand && (
                                 <div className="flex gap-2">
-                                    <span className="text-gray-600">Бренд:</span>
-                                    <span className="font-medium">{product.brand.name}</span>
+                                    <span className="text-gray-600">
+                                        Бренд:
+                                    </span>
+                                    <span className="font-medium">
+                                        {product.brand.name}
+                                    </span>
                                 </div>
                             )}
                             <div className="flex gap-2">
                                 <span className="text-gray-600">Наличие:</span>
-                                <span className={`font-medium ${product.qty > 0 ? 'text-green-600' : 'text-red-600'}`}>
-                                    {product.qty > 0 ? `В наличии (${product.qty} шт.)` : 'Нет в наличии'}
+                                <span
+                                    className={`font-medium ${product.qty > 0 ? 'text-green-600' : 'text-red-600'}`}
+                                >
+                                    {product.qty > 0
+                                        ? `В наличии (${product.qty} шт.)`
+                                        : 'Нет в наличии'}
                                 </span>
                             </div>
                             {product.vendor && (
                                 <div className="flex gap-2">
-                                    <span className="text-gray-600">Продавец:</span>
-                                    <span className="font-medium">{product.vendor.shop_name}</span>
+                                    <span className="text-gray-600">
+                                        Продавец:
+                                    </span>
+                                    <span className="font-medium">
+                                        {product.vendor.shop_name}
+                                    </span>
                                 </div>
                             )}
                         </div>
@@ -256,12 +338,18 @@ export default function ProductShow({ product, reviews, relatedProducts, isInWis
                         {/* Quantity & Actions */}
                         <div className="space-y-4">
                             <div className="flex items-center gap-3">
-                                <span className="text-sm font-medium">Количество:</span>
-                                <div className="flex items-center border rounded-lg">
+                                <span className="text-sm font-medium">
+                                    Количество:
+                                </span>
+                                <div className="flex items-center rounded-lg border">
                                     <Button
                                         variant="ghost"
                                         size="sm"
-                                        onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                                        onClick={() =>
+                                            setQuantity(
+                                                Math.max(1, quantity - 1),
+                                            )
+                                        }
                                         disabled={quantity <= 1}
                                     >
                                         -
@@ -269,15 +357,34 @@ export default function ProductShow({ product, reviews, relatedProducts, isInWis
                                     <Input
                                         type="number"
                                         value={quantity}
-                                        onChange={(e) => setQuantity(Math.max(1, Math.min(product.qty, parseInt(e.target.value) || 1)))}
-                                        className="w-16 text-center border-0 focus-visible:ring-0"
+                                        onChange={(e) =>
+                                            setQuantity(
+                                                Math.max(
+                                                    1,
+                                                    Math.min(
+                                                        product.qty,
+                                                        parseInt(
+                                                            e.target.value,
+                                                        ) || 1,
+                                                    ),
+                                                ),
+                                            )
+                                        }
+                                        className="w-16 border-0 text-center focus-visible:ring-0"
                                         min={1}
                                         max={product.qty}
                                     />
                                     <Button
                                         variant="ghost"
                                         size="sm"
-                                        onClick={() => setQuantity(Math.min(product.qty, quantity + 1))}
+                                        onClick={() =>
+                                            setQuantity(
+                                                Math.min(
+                                                    product.qty,
+                                                    quantity + 1,
+                                                ),
+                                            )
+                                        }
                                         disabled={quantity >= product.qty}
                                     >
                                         +
@@ -292,15 +399,21 @@ export default function ProductShow({ product, reviews, relatedProducts, isInWis
                                     className="flex-1"
                                     size="lg"
                                 >
-                                    <ShoppingCart className="w-5 h-5 mr-2" />
-                                    {isInCart ? 'В корзине' : 'Добавить в корзину'}
+                                    <ShoppingCart className="mr-2 h-5 w-5" />
+                                    {isInCart
+                                        ? 'В корзине'
+                                        : 'Добавить в корзину'}
                                 </Button>
                                 <Button
-                                    variant={isInWishlist ? 'default' : 'outline'}
+                                    variant={
+                                        isInWishlist ? 'default' : 'outline'
+                                    }
                                     size="lg"
                                     onClick={handleToggleWishlist}
                                 >
-                                    <Heart className={`w-5 h-5 ${isInWishlist ? 'fill-current' : ''}`} />
+                                    <Heart
+                                        className={`h-5 w-5 ${isInWishlist ? 'fill-current' : ''}`}
+                                    />
                                 </Button>
                             </div>
                         </div>
@@ -312,7 +425,7 @@ export default function ProductShow({ product, reviews, relatedProducts, isInWis
                                     href={product.video_link}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="text-primary hover:underline text-sm font-medium"
+                                    className="text-sm font-medium text-primary hover:underline"
                                 >
                                     Посмотреть видео о товаре
                                 </a>
@@ -327,7 +440,7 @@ export default function ProductShow({ product, reviews, relatedProducts, isInWis
                         <div className="flex gap-8 px-6">
                             <button
                                 onClick={() => setActiveTab('description')}
-                                className={`py-4 font-medium transition-colors border-b-2 ${
+                                className={`border-b-2 py-4 font-medium transition-colors ${
                                     activeTab === 'description'
                                         ? 'border-primary text-primary'
                                         : 'border-transparent text-gray-600 hover:text-gray-900'
@@ -337,7 +450,7 @@ export default function ProductShow({ product, reviews, relatedProducts, isInWis
                             </button>
                             <button
                                 onClick={() => setActiveTab('reviews')}
-                                className={`py-4 font-medium transition-colors border-b-2 ${
+                                className={`border-b-2 py-4 font-medium transition-colors ${
                                     activeTab === 'reviews'
                                         ? 'border-primary text-primary'
                                         : 'border-transparent text-gray-600 hover:text-gray-900'
@@ -349,33 +462,56 @@ export default function ProductShow({ product, reviews, relatedProducts, isInWis
                     </div>
 
                     <div className="p-6">
-                        {activeTab === 'description' && (
-                            <div
-                                className="prose max-w-none"
-                                dangerouslySetInnerHTML={{ __html: product.long_description }}
-                            />
-                        )}
+                        {activeTab === 'description' &&
+                            (productDescriptionHtml ? (
+                                <div
+                                    className="prose max-w-none"
+                                    dangerouslySetInnerHTML={{
+                                        __html: productDescriptionHtml,
+                                    }}
+                                />
+                            ) : (
+                                <p className="text-gray-600">
+                                    Описание отсутствует.
+                                </p>
+                            ))}
 
                         {activeTab === 'reviews' && (
                             <div className="space-y-8">
                                 {/* Review Form */}
                                 <div>
-                                    <h3 className="text-xl font-semibold mb-4">Оставить отзыв</h3>
-                                    <form onSubmit={handleSubmitReview} className="space-y-4">
+                                    <h3 className="mb-4 text-xl font-semibold">
+                                        Оставить отзыв
+                                    </h3>
+                                    <form
+                                        onSubmit={handleSubmitReview}
+                                        className="space-y-4"
+                                    >
                                         <div>
-                                            <label className="block text-sm font-medium mb-2">
+                                            <label className="mb-2 block text-sm font-medium">
                                                 Ваша оценка
                                             </label>
-                                            {renderStars(reviewRating, true, setReviewRating)}
+                                            {renderStars(
+                                                reviewRating,
+                                                true,
+                                                setReviewRating,
+                                            )}
                                         </div>
                                         <div>
-                                            <label htmlFor="review" className="block text-sm font-medium mb-2">
+                                            <label
+                                                htmlFor="review"
+                                                className="mb-2 block text-sm font-medium"
+                                            >
                                                 Ваш отзыв
                                             </label>
                                             <Textarea
                                                 id="review"
                                                 value={reviewText}
-                                                onChange={(e) => setReviewText(e.target.value)}
+                                                onChange={(e) =>
+                                                    setReviewText(
+                                                        e.target.value,
+                                                    )
+                                                }
                                                 placeholder="Поделитесь своим мнением о товаре..."
                                                 rows={4}
                                                 required
@@ -395,34 +531,66 @@ export default function ProductShow({ product, reviews, relatedProducts, isInWis
                                         Отзывы покупателей ({reviews.length})
                                     </h3>
                                     {reviews.length === 0 ? (
-                                        <p className="text-gray-600">Пока нет отзывов. Будьте первым!</p>
+                                        <p className="text-gray-600">
+                                            Пока нет отзывов. Будьте первым!
+                                        </p>
                                     ) : (
                                         <div className="space-y-6">
                                             {reviews.map((review) => (
-                                                <div key={review.id} className="border-b pb-6 last:border-0">
+                                                <div
+                                                    key={review.id}
+                                                    className="border-b pb-6 last:border-0"
+                                                >
                                                     <div className="flex items-start gap-4">
-                                                        <div className="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center flex-shrink-0">
-                                                            {review.user.avatar ? (
+                                                        <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-gray-200">
+                                                            {review.user
+                                                                .avatar ? (
                                                                 <img
-                                                                    src={review.user.avatar}
-                                                                    alt={review.user.name}
-                                                                    className="w-full h-full rounded-full object-cover"
+                                                                    src={
+                                                                        review
+                                                                            .user
+                                                                            .avatar
+                                                                    }
+                                                                    alt={
+                                                                        review
+                                                                            .user
+                                                                            .name
+                                                                    }
+                                                                    className="h-full w-full rounded-full object-cover"
                                                                 />
                                                             ) : (
                                                                 <span className="text-lg font-semibold text-gray-600">
-                                                                    {review.user.name.charAt(0).toUpperCase()}
+                                                                    {review.user.name
+                                                                        .charAt(
+                                                                            0,
+                                                                        )
+                                                                        .toUpperCase()}
                                                                 </span>
                                                             )}
                                                         </div>
                                                         <div className="flex-1">
-                                                            <div className="flex items-center justify-between mb-2">
-                                                                <h4 className="font-semibold">{review.user.name}</h4>
+                                                            <div className="mb-2 flex items-center justify-between">
+                                                                <h4 className="font-semibold">
+                                                                    {
+                                                                        review
+                                                                            .user
+                                                                            .name
+                                                                    }
+                                                                </h4>
                                                                 <span className="text-sm text-gray-600">
-                                                                    {new Date(review.created_at).toLocaleDateString('ru-RU')}
+                                                                    {new Date(
+                                                                        review.created_at,
+                                                                    ).toLocaleDateString(
+                                                                        'ru-RU',
+                                                                    )}
                                                                 </span>
                                                             </div>
-                                                            {renderStars(review.rating)}
-                                                            <p className="mt-2 text-gray-700">{review.review}</p>
+                                                            {renderStars(
+                                                                review.rating,
+                                                            )}
+                                                            <p className="mt-2 text-gray-700">
+                                                                {review.review}
+                                                            </p>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -438,10 +606,15 @@ export default function ProductShow({ product, reviews, relatedProducts, isInWis
                 {/* Related Products */}
                 {relatedProducts.length > 0 && (
                     <div>
-                        <h2 className="text-2xl font-bold mb-6">Похожие товары</h2>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+                        <h2 className="mb-6 text-2xl font-bold">
+                            Похожие товары
+                        </h2>
+                        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
                             {relatedProducts.map((relatedProduct) => (
-                                <ProductCard key={relatedProduct.id} product={relatedProduct} />
+                                <ProductCard
+                                    key={relatedProduct.id}
+                                    product={relatedProduct}
+                                />
                             ))}
                         </div>
                     </div>
