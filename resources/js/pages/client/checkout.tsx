@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
-import { useState, FormEvent } from 'react';
+import { useState, FormEvent, useEffect } from 'react';
 import { ShoppingBag } from 'lucide-react';
 
 interface CartItem {
@@ -36,18 +36,32 @@ interface Address {
 interface ShippingRule {
     id: number;
     name: string;
-    type: string;
-    min_cost: number;
+    type: 'flat' | 'free_shipping' | 'min_cost';
+    min_cost: number | null;
+    cost: number;
     status: boolean;
+}
+
+interface AppliedCoupon {
+    code: string;
+    discount_type: 'percent' | 'fixed';
+    discount: number;
 }
 
 interface CheckoutProps {
     cartItems: CartItem[];
     addresses: Address[];
     shippingRules: ShippingRule[];
+    flash?: { appliedCoupon?: AppliedCoupon | null };
 }
 
-export default function Checkout({ cartItems, addresses, shippingRules }: CheckoutProps) {
+const TYPE_LABELS: Record<string, string> = {
+    flat: 'Фиксированная',
+    free_shipping: 'Бесплатная',
+    min_cost: 'По мин. сумме',
+};
+
+export default function Checkout({ cartItems, addresses, shippingRules, flash }: CheckoutProps) {
     const [selectedAddressId, setSelectedAddressId] = useState<number | null>(
         addresses.length > 0 ? addresses[0].id : null
     );
@@ -56,69 +70,72 @@ export default function Checkout({ cartItems, addresses, shippingRules }: Checko
     );
     const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<'cash' | 'card'>('cash');
     const [couponCode, setCouponCode] = useState('');
-    const [appliedCoupon, setAppliedCoupon] = useState<{ code: string; discount: number } | null>(null);
+    const [appliedCoupon, setAppliedCoupon] = useState<AppliedCoupon | null>(null);
+    const [couponError, setCouponError] = useState<string | null>(null);
     const [showAddAddressForm, setShowAddAddressForm] = useState(false);
     const [newAddress, setNewAddress] = useState({ address: '', description: '' });
 
+    // Pick up coupon from flash (set after applyCoupon redirect)
+    useEffect(() => {
+        if (flash?.appliedCoupon) {
+            setAppliedCoupon(flash.appliedCoupon);
+            setCouponError(null);
+        }
+    }, [flash?.appliedCoupon]);
+
     const getEffectivePrice = (item: CartItem): number => {
         const { product } = item;
-
         if (!product.offer_price || !product.offer_start_date || !product.offer_end_date) {
             return product.price;
         }
-
         const now = new Date();
-        const startDate = new Date(product.offer_start_date);
-        const endDate = new Date(product.offer_end_date);
-
-        if (now >= startDate && now <= endDate) {
+        if (now >= new Date(product.offer_start_date) && now <= new Date(product.offer_end_date)) {
             return product.offer_price;
         }
-
         return product.price;
     };
 
-    const calculateSubtotal = (): number => {
-        return cartItems.reduce((total, item) => {
-            return total + getEffectivePrice(item) * item.quantity;
-        }, 0);
-    };
+    const calculateSubtotal = (): number =>
+        cartItems.reduce((total, item) => total + getEffectivePrice(item) * item.quantity, 0);
 
+    /** Mirror of the backend match() logic */
     const getShippingCost = (): number => {
         if (!selectedShippingId) return 0;
-        const selectedShipping = shippingRules.find(rule => rule.id === selectedShippingId);
-        return selectedShipping ? selectedShipping.min_cost : 0;
+        const rule = shippingRules.find(r => r.id === selectedShippingId);
+        if (!rule) return 0;
+        switch (rule.type) {
+            case 'flat':
+                return rule.cost;
+            case 'free_shipping':
+                return 0;
+            case 'min_cost':
+                return calculateSubtotal() >= (rule.min_cost ?? 0) ? 0 : rule.cost;
+            default:
+                return 0;
+        }
     };
 
     const getDiscount = (): number => {
-        return appliedCoupon ? appliedCoupon.discount : 0;
+        if (!appliedCoupon) return 0;
+        return appliedCoupon.discount_type === 'percent'
+            ? calculateSubtotal() * appliedCoupon.discount / 100
+            : appliedCoupon.discount;
     };
 
-    const calculateTotal = (): number => {
-        const subtotal = calculateSubtotal();
-        const shipping = getShippingCost();
-        const discount = getDiscount();
-        return subtotal + shipping - discount;
-    };
+    const calculateTotal = (): number =>
+        Math.max(0, calculateSubtotal() + getShippingCost() - getDiscount());
 
     const handleApplyCoupon = () => {
         if (!couponCode.trim()) return;
-
-        router.post('/checkout/coupon', {
-            code: couponCode,
-        }, {
-            onSuccess: (page) => {
-                const discount = (page.props as any).couponDiscount;
-                if (discount) {
-                    setAppliedCoupon({ code: couponCode, discount });
-                }
-            },
+        setCouponError(null);
+        router.post('/checkout/coupon', { code: couponCode }, {
+            preserveScroll: true,
+            onError: (errors) => setCouponError(errors.code ?? 'Ошибка применения купона'),
         });
     };
 
     const handleAddAddress = (e: FormEvent) => {
         e.preventDefault();
-
         router.post('/account/addresses', newAddress, {
             onSuccess: () => {
                 setNewAddress({ address: '', description: '' });
@@ -132,18 +149,28 @@ export default function Checkout({ cartItems, addresses, shippingRules }: Checko
             alert('Пожалуйста, выберите адрес доставки');
             return;
         }
-
         if (!selectedShippingId) {
             alert('Пожалуйста, выберите способ доставки');
             return;
         }
-
         router.post('/checkout', {
             address_id: selectedAddressId,
             payment_method: selectedPaymentMethod,
             shipping_rule_id: selectedShippingId,
             coupon_code: appliedCoupon?.code || null,
         });
+    };
+
+    /** Label shown next to shipping rule name in the radio list */
+    const shippingRuleCostLabel = (rule: ShippingRule): string => {
+        switch (rule.type) {
+            case 'free_shipping':
+                return 'Бесплатно';
+            case 'min_cost':
+                return `${rule.cost.toFixed(2)} сом. (при заказе < ${(rule.min_cost ?? 0).toFixed(2)} сом.)`;
+            default:
+                return `${rule.cost.toFixed(2)} сом.`;
+        }
     };
 
     if (cartItems.length === 0) {
@@ -313,13 +340,13 @@ export default function Checkout({ cartItems, addresses, shippingRules }: Checko
                                                 />
                                                 <div>
                                                     <p className="font-medium">{rule.name}</p>
-                                                    <p className="text-sm text-muted-foreground capitalize">
-                                                        {rule.type}
+                                                    <p className="text-sm text-muted-foreground">
+                                                        {TYPE_LABELS[rule.type] ?? rule.type}
                                                     </p>
                                                 </div>
                                             </div>
-                                            <span className="font-semibold">
-                                                {rule.min_cost.toFixed(2)} сом.
+                                            <span className="font-semibold text-right">
+                                                {shippingRuleCostLabel(rule)}
                                             </span>
                                         </label>
                                     ))}
@@ -379,11 +406,21 @@ export default function Checkout({ cartItems, addresses, shippingRules }: Checko
                                         Применить
                                     </Button>
                                 </div>
+                                {couponError && (
+                                    <p className="text-sm text-destructive mt-1">{couponError}</p>
+                                )}
                                 {appliedCoupon && (
-                                    <div className="mt-2">
+                                    <div className="mt-2 flex items-center justify-between">
                                         <Badge variant="secondary">
-                                            Промокод "{appliedCoupon.code}" применен
+                                            Промокод «{appliedCoupon.code}» применён
                                         </Badge>
+                                        <button
+                                            type="button"
+                                            className="text-xs text-muted-foreground underline"
+                                            onClick={() => { setAppliedCoupon(null); setCouponCode(''); }}
+                                        >
+                                            Убрать
+                                        </button>
                                     </div>
                                 )}
                             </div>
@@ -397,11 +434,19 @@ export default function Checkout({ cartItems, addresses, shippingRules }: Checko
                                 </div>
                                 <div className="flex justify-between text-muted-foreground">
                                     <span>Доставка</span>
-                                    <span>{shippingCost.toFixed(2)} сом.</span>
+                                    <span>
+                                        {shippingCost === 0
+                                            ? <span className="text-green-600">Бесплатно</span>
+                                            : `${shippingCost.toFixed(2)} сом.`}
+                                    </span>
                                 </div>
                                 {discount > 0 && (
                                     <div className="flex justify-between text-green-600">
-                                        <span>Скидка</span>
+                                        <span>
+                                            Скидка{appliedCoupon?.discount_type === 'percent'
+                                                ? ` (${appliedCoupon.discount}%)`
+                                                : ''}
+                                        </span>
                                         <span>-{discount.toFixed(2)} сом.</span>
                                     </div>
                                 )}

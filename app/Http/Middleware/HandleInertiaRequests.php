@@ -50,6 +50,10 @@ class HandleInertiaRequests extends Middleware
                 'roles' => $request->user()?->getRoleNames(),
             ],
 
+            'flash' => [
+                'appliedCoupon' => $request->session()->get('appliedCoupon'),
+            ],
+
             'sidebarOpen' => !$request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
             'cartCount' => $request->user() ? Cart::where('user_id', $request->user()->id)->count() : 0,
             'wishlistCount' => $request->user() ? Wishlist::where('user_id', $request->user()->id)->count() : 0,

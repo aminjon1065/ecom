@@ -131,12 +131,6 @@ class ProductController extends Controller
                 ->toArray();
         }
 
-        try {
-            $data['long_description'] = json_decode($data['long_description'], true, 512, JSON_THROW_ON_ERROR);
-        } catch (\JsonException $e) {
-            \Log::error($e->getMessage());
-        }
-
         Product::create($data);
 
         return redirect()->route('admin.product.index')->with('success', 'Продукт добавлен');
@@ -176,12 +170,6 @@ class ProductController extends Controller
             $data['gallery'] = collect($request->file('gallery'))
                 ->map(fn ($file) => $file->store('products/gallery', 'public'))
                 ->toArray();
-        }
-
-        try {
-            $data['long_description'] = json_decode($data['long_description'], true, 512, JSON_THROW_ON_ERROR);
-        } catch (\JsonException $e) {
-            \Log::error($e->getMessage());
         }
 
         $product->update($data);

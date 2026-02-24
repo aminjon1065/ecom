@@ -59,10 +59,10 @@ class CheckoutController extends Controller
             return back()->withErrors(['code' => 'Купон уже использован максимальное количество раз']);
         }
 
-        return back()->with('coupon', [
-            'code' => $coupon->code,
+        return back()->with('appliedCoupon', [
+            'code'          => $coupon->code,
             'discount_type' => $coupon->discount_type,
-            'discount' => $coupon->discount,
+            'discount'      => $coupon->discount,
         ]);
     }
 
@@ -93,8 +93,14 @@ class CheckoutController extends Controller
             $shippingCost = 0;
             if (!empty($validated['shipping_rule_id'])) {
                 $rule = ShippingRules::find($validated['shipping_rule_id']);
-                if ($rule && $rule->type === 'flat') {
-                    $shippingCost = $rule->min_cost;
+                if ($rule) {
+                    $shippingCost = match ($rule->type) {
+                        'flat'          => $rule->cost,
+                        'free_shipping' => 0,
+                        // free when subtotal meets threshold, otherwise charge cost
+                        'min_cost'      => $subtotal >= ($rule->min_cost ?? 0) ? 0 : $rule->cost,
+                        default         => 0,
+                    };
                 }
             }
 
