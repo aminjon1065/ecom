@@ -52,10 +52,10 @@ interface Brand {
 
 interface Filters {
   search?: string;
-  category?: number;
-  brand?: number;
-  min_price?: number;
-  max_price?: number;
+  category?: number | string;
+  brand?: number | string;
+  min_price?: number | string;
+  max_price?: number | string;
   sort?: string;
 }
 
@@ -74,7 +74,14 @@ interface Props {
 }
 
 export default function ProductsIndex({ products, productsMeta, categories, brands, filters: rawFilters }: Props) {
-  const filters = (rawFilters && !Array.isArray(rawFilters) ? rawFilters : {}) as Filters;
+  const normalizedFilters = (rawFilters && !Array.isArray(rawFilters) ? rawFilters : {}) as Filters;
+  const filters: Filters = {
+    ...normalizedFilters,
+    category: normalizedFilters.category ? Number(normalizedFilters.category) : undefined,
+    brand: normalizedFilters.brand ? Number(normalizedFilters.brand) : undefined,
+    min_price: normalizedFilters.min_price ?? undefined,
+    max_price: normalizedFilters.max_price ?? undefined,
+  };
   const [searchQuery, setSearchQuery] = useState(filters.search || '');
   const [minPrice, setMinPrice] = useState(filters.min_price?.toString() || '');
   const [maxPrice, setMaxPrice] = useState(filters.max_price?.toString() || '');
@@ -100,6 +107,13 @@ export default function ProductsIndex({ products, productsMeta, categories, bran
       },
     );
   }, [loading, hasMore, filters, productsMeta.current_page]);
+
+  useEffect(() => {
+    setSearchQuery(filters.search || '');
+    setMinPrice(filters.min_price?.toString() || '');
+    setMaxPrice(filters.max_price?.toString() || '');
+    setSortValue(filters.sort || 'latest');
+  }, [filters.search, filters.min_price, filters.max_price, filters.sort]);
 
   useEffect(() => {
     const el = loadMoreRef.current;

@@ -47,17 +47,17 @@ class ProductController extends Controller
                 }
 
                 // Fuzzy bigram matching: at least 50% of bigrams match
-                if (!empty($bigrams)) {
+                if (! empty($bigrams)) {
                     $minMatches = max(1, (int) ceil(count($bigrams) * 0.5));
                     $conditions = [];
                     $bindings = [];
                     foreach ($bigrams as $bigram) {
                         $conditions[] = '(LOWER(name) LIKE ?)';
-                        $bindings[] = '%' . mb_strtolower($bigram) . '%';
+                        $bindings[] = '%'.mb_strtolower($bigram).'%';
                     }
 
                     $q->orWhereRaw(
-                        '(' . implode(' + ', $conditions) . ') >= ?',
+                        '('.implode(' + ', $conditions).') >= ?',
                         [...$bindings, $minMatches]
                     );
                 }
@@ -99,16 +99,22 @@ class ProductController extends Controller
         };
 
         $paginated = $query->paginate(12)->withQueryString();
+        $products = $paginated->currentPage() > 1
+            ? Inertia::merge($paginated->items())
+            : $paginated->items();
 
         $categories = Category::where('status', true)
-            ->withCount(['products' => fn($q) => $q->where('status', true)->where('is_approved', true)])
+            ->withCount(['products' => fn ($q) => $q->where('status', true)->where('is_approved', true)])
             ->having('products_count', '>', 0)
             ->get(['id', 'name']);
 
-        $brands = Brand::get(['id', 'name']);
+        $brands = Brand::where('status', true)
+            ->withCount(['products' => fn ($q) => $q->where('status', true)->where('is_approved', true)])
+            ->having('products_count', '>', 0)
+            ->get(['id', 'name']);
 
         return Inertia::render('client/products/index', [
-            'products' => Inertia::merge($paginated->items()),
+            'products' => $products,
             'productsMeta' => [
                 'current_page' => $paginated->currentPage(),
                 'last_page' => $paginated->lastPage(),
@@ -184,14 +190,14 @@ class ProductController extends Controller
         // Generate bigrams (2-char chunks) for fuzzy matching
         $bigrams = $this->getBigrams($q);
 
-        if (!empty($bigrams)) {
+        if (! empty($bigrams)) {
             // Build a relevance score: count how many bigrams match in name
             $scoreExpression = [];
             $bindings = [];
 
             foreach ($bigrams as $bigram) {
                 $scoreExpression[] = '(LOWER(name) LIKE ?)';
-                $bindings[] = '%' . mb_strtolower($bigram) . '%';
+                $bindings[] = '%'.mb_strtolower($bigram).'%';
             }
 
             $scoreRaw = implode(' + ', $scoreExpression);
@@ -209,11 +215,11 @@ class ProductController extends Controller
                 $bigramBindings = [];
                 foreach ($bigrams as $bigram) {
                     $bigramConditions[] = '(LOWER(name) LIKE ?)';
-                    $bigramBindings[] = '%' . mb_strtolower($bigram) . '%';
+                    $bigramBindings[] = '%'.mb_strtolower($bigram).'%';
                 }
 
                 $sub->orWhereRaw(
-                    '(' . implode(' + ', $bigramConditions) . ') >= ?',
+                    '('.implode(' + ', $bigramConditions).') >= ?',
                     [...$bigramBindings, $minMatches]
                 );
             });
@@ -223,7 +229,7 @@ class ProductController extends Controller
                 ->orderByRaw('qty = 0')
                 ->orderByRaw(
                     'CASE WHEN LOWER(name) LIKE ? THEN 0 WHEN LOWER(name) LIKE ? THEN 1 ELSE 2 END',
-                    [mb_strtolower($q), mb_strtolower($q) . '%']
+                    [mb_strtolower($q), mb_strtolower($q).'%']
                 )
                 ->orderByRaw("({$scoreRaw}) DESC", $bindings)
                 ->limit(8)

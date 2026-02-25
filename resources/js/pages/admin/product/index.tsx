@@ -125,9 +125,24 @@ function EditableCell({
 
 const columns: Column<Product>[] = [
     {
-        key: 'id',
-        label: 'ID',
-        className: 'w-[60px] text-center',
+        key: 'thumb_image',
+        label: 'Фото',
+        className: 'w-[72px] text-center',
+        render: (row) => {
+            const imageSrc = row.thumb_image?.startsWith('http') || row.thumb_image?.startsWith('/')
+                ? row.thumb_image
+                : `/storage/${row.thumb_image}`;
+
+            return (
+                <div className="flex justify-center">
+                    <img
+                        src={imageSrc}
+                        alt={row.name}
+                        className="h-10 w-10 rounded object-cover border"
+                    />
+                </div>
+            );
+        },
     },
     {
         key: 'name',
