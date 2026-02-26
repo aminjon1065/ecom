@@ -38,7 +38,7 @@ const AllCategories = ({ categories }: Props) => {
         },
         {
             key: 'slug',
-            label: 'Slug',
+            label: 'Слаг',
             className: 'text-muted-foreground text-sm',
         },
         {

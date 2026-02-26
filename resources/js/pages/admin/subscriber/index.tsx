@@ -25,7 +25,7 @@ interface Props { subscribers: PaginatedResponse<Subscriber>; }
 
 export default function SubscriberIndex({ subscribers }: Props) {
     const columns: Column<Subscriber>[] = [
-        { key: 'email', label: 'Email' },
+        { key: 'email', label: 'Эл. почта' },
         {
             key: 'is_verified', label: 'Подтверждён',
             render: (row) => <Badge variant={row.is_verified ? 'default' : 'secondary'}>{row.is_verified ? 'Да' : 'Нет'}</Badge>,

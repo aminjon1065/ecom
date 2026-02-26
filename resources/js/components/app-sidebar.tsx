@@ -164,8 +164,8 @@ export function AppSidebar() {
             </SidebarHeader>
 
             <SidebarContent>
-                <NavMain items={mainNavItems} title={'Dashboard'} />
-                <NavMain items={mainMenu} title={'E-commerce'} />
+                <NavMain items={mainNavItems} title={'Дашборд'} />
+                <NavMain items={mainMenu} title={'Э-коммерция'} />
             </SidebarContent>
 
             <SidebarFooter>

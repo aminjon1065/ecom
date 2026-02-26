@@ -118,7 +118,7 @@ export function EditBrandModal({ brandItem }: Props) {
 
                     {/* Featured */}
                     <div className="flex items-center justify-between">
-                        <Label>Featured</Label>
+                        <Label>Показать</Label>
                         <Switch
                             checked={data.is_featured}
                             onCheckedChange={(v) => setData('is_featured', v)}

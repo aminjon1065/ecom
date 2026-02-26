@@ -105,12 +105,12 @@ class ProductController extends Controller
 
         $categories = Category::where('status', true)
             ->withCount(['products' => fn ($q) => $q->where('status', true)->where('is_approved', true)])
-            ->having('products_count', '>', 0)
+            ->whereHas('products', fn ($q) => $q->where('status', true)->where('is_approved', true))
             ->get(['id', 'name']);
 
         $brands = Brand::where('status', true)
             ->withCount(['products' => fn ($q) => $q->where('status', true)->where('is_approved', true)])
-            ->having('products_count', '>', 0)
+            ->whereHas('products', fn ($q) => $q->where('status', true)->where('is_approved', true))
             ->get(['id', 'name']);
 
         return Inertia::render('client/products/index', [

@@ -10,7 +10,7 @@ import { edit as editAppearance } from '@/routes/admin/appearance';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
-        title: 'Appearance settings',
+        title: 'Настройки внешнего вида',
         href: editAppearance().url,
     },
 ];
@@ -18,13 +18,13 @@ const breadcrumbs: BreadcrumbItem[] = [
 export default function Appearance() {
     return (
         <AppLayout breadcrumbs={breadcrumbs}>
-            <Head title="Appearance settings" />
+            <Head title="Настройки внешнего вида" />
 
             <SettingsLayout>
                 <div className="space-y-6">
                     <HeadingSmall
-                        title="Appearance settings"
-                        description="Update your account's appearance settings"
+                        title="Настройки внешнего вида"
+                        description="Измените настройки внешнего вида аккаунта"
                     />
                     <AppearanceTabs />
                 </div>

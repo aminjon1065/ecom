@@ -212,18 +212,42 @@ const columns: Column<Product>[] = [
     {
         key: 'id',
         label: '',
-        className: 'w-[48px] text-center',
-        render: (row) => (
-            <Button
-                size="icon"
-                variant="ghost"
-                className="h-8 w-8"
-                onClick={() => router.visit(product.edit(row.id).url)}
-                title="Редактировать"
-            >
-                <Pencil className="h-4 w-4" />
-            </Button>
-        ),
+        className: 'w-[160px] text-center',
+        render: (row) => {
+            const sourceUrl = row.first_source_link || row.second_source_link;
+
+            return (
+                <div className="flex items-center justify-center gap-1">
+                    {sourceUrl ? (
+                        <Button
+                            asChild
+                            size="sm"
+                            variant="ghost"
+                            className="h-8 px-2"
+                        >
+                            <a
+                                href={sourceUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                title="Открыть источник"
+                            >
+                                Источник
+                            </a>
+                        </Button>
+                    ) : null}
+
+                    <Button
+                        size="icon"
+                        variant="ghost"
+                        className="h-8 w-8"
+                        onClick={() => router.visit(product.edit(row.id).url)}
+                        title="Редактировать"
+                    >
+                        <Pencil className="h-4 w-4" />
+                    </Button>
+                </div>
+            );
+        },
     },
 ];
 

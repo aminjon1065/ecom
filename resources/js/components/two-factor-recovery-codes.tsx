@@ -57,11 +57,12 @@ export default function TwoFactorRecoveryCodes({
             <CardHeader>
                 <CardTitle className="flex gap-3">
                     <LockKeyhole className="size-4" aria-hidden="true" />
-                    2FA Recovery Codes
+                    Резервные коды 2FA
                 </CardTitle>
                 <CardDescription>
-                    Recovery codes let you regain access if you lose your 2FA
-                    device. Store them in a secure password manager.
+                    Резервные коды помогут восстановить доступ, если вы
+                    потеряете устройство для 2FA. Храните их в защищённом
+                    менеджере паролей.
                 </CardDescription>
             </CardHeader>
             <CardContent>
@@ -76,7 +77,8 @@ export default function TwoFactorRecoveryCodes({
                             className="size-4"
                             aria-hidden="true"
                         />
-                        {codesAreVisible ? 'Hide' : 'View'} Recovery Codes
+                        {codesAreVisible ? 'Скрыть' : 'Показать'} резервные
+                        коды
                     </Button>
 
                     {canRegenerateCodes && (
@@ -92,7 +94,7 @@ export default function TwoFactorRecoveryCodes({
                                     disabled={processing}
                                     aria-describedby="regenerate-warning"
                                 >
-                                    <RefreshCw /> Regenerate Codes
+                                    <RefreshCw /> Обновить коды
                                 </Button>
                             )}
                         </Form>
@@ -145,13 +147,14 @@ export default function TwoFactorRecoveryCodes({
 
                                 <div className="text-xs text-muted-foreground select-none">
                                     <p id="regenerate-warning">
-                                        Each recovery code can be used once to
-                                        access your account and will be removed
-                                        after use. If you need more, click{' '}
+                                        Каждый резервный код можно использовать
+                                        только один раз для входа в аккаунт.
+                                        После использования он будет удалён.
+                                        Если нужны новые коды, нажмите{' '}
                                         <span className="font-bold">
-                                            Regenerate Codes
+                                            Обновить коды
                                         </span>{' '}
-                                        above.
+                                        выше.
                                     </p>
                                 </div>
                             </>

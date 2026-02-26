@@ -31,6 +31,8 @@ class ProductController extends Controller
                 'status',
                 'category_id',
                 'brand_id',
+                'first_source_link',
+                'second_source_link',
             ])
             ->with([
                 'category:id,name',

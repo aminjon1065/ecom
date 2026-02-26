@@ -181,6 +181,7 @@ export default function ProductsIndex({ products, productsMeta, categories, bran
     setSearchQuery('');
     setMinPrice('');
     setMaxPrice('');
+    setSortValue('latest');
     router.get('/products', {}, { preserveState: false });
   };
 
