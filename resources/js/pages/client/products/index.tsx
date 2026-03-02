@@ -370,12 +370,12 @@ export default function ProductsIndex({ products, productsMeta, categories, bran
 
         <div className="flex flex-col md:flex-row gap-6">
           <aside className="hidden md:block w-64 shrink-0">
-            <FilterSidebar />
+            {FilterSidebar()}
           </aside>
 
           {mobileFiltersOpen && (
             <div className="md:hidden mb-6">
-              <FilterSidebar />
+              {FilterSidebar()}
             </div>
           )}
 

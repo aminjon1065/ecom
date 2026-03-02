@@ -15,10 +15,10 @@ type ImportError = {
 };
 
 interface Props {
-    errors?: ImportError[];
+    importErrors?: ImportError[];
 }
 
-export default function Import({ errors }: Props) {
+export default function Import({ importErrors }: Props) {
     const { data, setData, processing, reset } = useForm<{
         file: File | null;
     }>({
@@ -79,14 +79,14 @@ export default function Import({ errors }: Props) {
                 </Card>
 
                 {/* Ошибки импорта */}
-                {errors && errors.length > 0 && (
+                {importErrors && importErrors.length > 0 && (
                     <Card>
                         <CardHeader>
                             <CardTitle>Ошибки импорта</CardTitle>
                         </CardHeader>
 
                         <CardContent className="space-y-3">
-                            {errors.map((error, index) => (
+                            {importErrors.map((error, index) => (
                                 <Alert key={index} variant="destructive">
                                     <AlertTitle>Строка {error.row}</AlertTitle>
                                     <AlertDescription>

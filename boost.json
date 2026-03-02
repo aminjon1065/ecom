@@ -1,13 +1,12 @@
 {
     "agents": [
-        "codex",
-        "gemini"
+        "claude_code",
+        "codex"
     ],
     "editors": [
+        "claude_code",
         "codex",
-        "gemini",
-        "phpstorm",
-        "vscode"
+        "phpstorm"
     ],
     "guidelines": [
         "laravel/fortify"

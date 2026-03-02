@@ -11,6 +11,8 @@ export interface Product {
     code: number;
     status: boolean;
     is_approved: boolean;
+    link_source?: string | null;
+    link_first?: string | null;
     first_source_link?: string | null;
     second_source_link?: string | null;
     category: {

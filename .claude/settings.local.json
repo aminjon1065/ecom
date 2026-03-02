@@ -10,7 +10,10 @@
       "Bash(php artisan route:list:*)",
       "Bash(php artisan config:clear:*)",
       "Bash(php artisan:*)",
-      "Bash(npx tsc:*)"
+      "Bash(npx tsc:*)",
+      "mcp__laravel-boost__tinker",
+      "mcp__laravel-boost__database-schema",
+      "Bash(vendor/bin/pint:*)"
     ]
   }
 }

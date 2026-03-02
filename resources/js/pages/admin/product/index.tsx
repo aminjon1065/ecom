@@ -17,7 +17,7 @@ import { Category } from '@/types/category';
 import { PaginatedResponse } from '@/types/pagination';
 import { Product } from '@/types/product';
 import { router } from '@inertiajs/react';
-import { Check, Pencil, X } from 'lucide-react';
+import { Check, ExternalLink, Pencil, X } from 'lucide-react';
 import { useRef, useState } from 'react';
 import { toast } from 'sonner';
 
@@ -75,7 +75,7 @@ function EditableCell({
             <button
                 type="button"
                 onClick={open}
-                className="w-full rounded px-2 py-1 text-left hover:bg-muted transition-colors cursor-pointer"
+                className="w-full cursor-pointer rounded px-2 py-1 text-left transition-colors hover:bg-muted"
             >
                 {value ?? '—'}
             </button>
@@ -123,22 +123,42 @@ function EditableCell({
     );
 }
 
+function normalizeExternalUrl(url: string | null | undefined): string | null {
+    if (!url) {
+        return null;
+    }
+
+    const trimmedUrl = url.trim();
+
+    if (!trimmedUrl) {
+        return null;
+    }
+
+    if (/^https?:\/\//i.test(trimmedUrl)) {
+        return trimmedUrl;
+    }
+
+    return `https://${trimmedUrl}`;
+}
+
 const columns: Column<Product>[] = [
     {
         key: 'thumb_image',
         label: 'Фото',
         className: 'w-[72px] text-center',
         render: (row) => {
-            const imageSrc = row.thumb_image?.startsWith('http') || row.thumb_image?.startsWith('/')
-                ? row.thumb_image
-                : `/storage/${row.thumb_image}`;
+            const imageSrc =
+                row.thumb_image?.startsWith('http') ||
+                row.thumb_image?.startsWith('/')
+                    ? row.thumb_image
+                    : `/storage/${row.thumb_image}`;
 
             return (
                 <div className="flex justify-center">
                     <img
                         src={imageSrc}
                         alt={row.name}
-                        className="h-10 w-10 rounded object-cover border"
+                        className="h-10 w-10 rounded border object-cover"
                     />
                 </div>
             );
@@ -148,8 +168,16 @@ const columns: Column<Product>[] = [
         key: 'name',
         label: 'Название',
         render: (row) => (
-            <div className="font-medium">{row.name}</div>
+            <div className="max-w-[280px] font-medium break-words whitespace-normal">
+                {row.name}
+            </div>
         ),
+    },
+    {
+        key: 'code',
+        label: 'Код',
+        className: 'w-[120px]',
+        render: (row) => <span className="font-mono text-xs">{row.code}</span>,
     },
     {
         key: 'price',
@@ -182,11 +210,7 @@ const columns: Column<Product>[] = [
         label: 'SKU',
         className: 'w-[160px]',
         render: (row) => (
-            <EditableCell
-                value={row.sku}
-                field="sku"
-                productId={row.id}
-            />
+            <EditableCell value={row.sku} field="sku" productId={row.id} />
         ),
     },
     {
@@ -211,15 +235,29 @@ const columns: Column<Product>[] = [
     },
     {
         key: 'id',
-        label: '',
-        className: 'w-[160px] text-center',
+        label: 'Источник',
+        className: 'w-[320px] text-center',
         render: (row) => {
-            const sourceUrl = row.first_source_link || row.second_source_link;
+            const rawSourceLinks = [
+                row.link_source,
+                row.link_first,
+                row.first_source_link,
+                row.second_source_link,
+            ];
+
+            const sourceLinks = Array.from(
+                new Set(
+                    rawSourceLinks
+                        .map((value) => normalizeExternalUrl(value))
+                        .filter((value): value is string => value !== null),
+                ),
+            );
 
             return (
-                <div className="flex items-center justify-center gap-1">
-                    {sourceUrl ? (
+                <div className="flex items-center justify-center gap-1 whitespace-normal">
+                    {sourceLinks.map((sourceUrl, index) => (
                         <Button
+                            key={sourceUrl}
                             asChild
                             size="sm"
                             variant="ghost"
@@ -229,12 +267,16 @@ const columns: Column<Product>[] = [
                                 href={sourceUrl}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                title="Открыть источник"
+                                title={sourceUrl}
+                                className="inline-flex items-center gap-1"
                             >
-                                Источник
+                                <ExternalLink className="h-3.5 w-3.5" />
+                                {sourceLinks.length > 1
+                                    ? `Источник ${index + 1}`
+                                    : 'Источник'}
                             </a>
                         </Button>
-                    ) : null}
+                    ))}
 
                     <Button
                         size="icon"
@@ -407,9 +449,9 @@ const Index = ({
                                 onClick={() => {
                                     setFilters({
                                         search: '',
-                                        category_id: '',
-                                        brand_id: '',
-                                        status: '',
+                                        category_id: 'all',
+                                        brand_id: 'all',
+                                        status: 'all',
                                     });
 
                                     router.get(product.index().url);

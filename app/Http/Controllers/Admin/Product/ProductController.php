@@ -11,6 +11,7 @@ use App\Models\ChildCategory;
 use App\Models\Product;
 use App\Models\SubCategory;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
@@ -19,21 +20,35 @@ class ProductController extends Controller
 {
     public function index(Request $request): \Inertia\Response
     {
+        $selectColumns = [
+            'id',
+            'name',
+            'thumb_image',
+            'price',
+            'sku',
+            'qty',
+            'code',
+            'status',
+            'category_id',
+            'brand_id',
+        ];
+
+        if (Schema::hasColumn('products', 'link_source')) {
+            $selectColumns['first_source_link'] = 'link_source';
+
+            if (Schema::hasColumn('products', 'link_first')) {
+                $selectColumns['second_source_link'] = 'link_first';
+            }
+        } else {
+            foreach (['first_source_link', 'second_source_link'] as $column) {
+                if (Schema::hasColumn('products', $column)) {
+                    $selectColumns[] = $column;
+                }
+            }
+        }
+
         $products = Product::query()
-            ->select([
-                'id',
-                'name',
-                'thumb_image',
-                'price',
-                'sku',
-                'qty',
-                'code',
-                'status',
-                'category_id',
-                'brand_id',
-                'first_source_link',
-                'second_source_link',
-            ])
+            ->select($selectColumns)
             ->with([
                 'category:id,name',
                 'brand:id,name',

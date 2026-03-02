@@ -1,14 +1,14 @@
 {
     "mcpServers": {
         "laravel-boost": {
-            "command": "/opt/homebrew/Cellar/php@8.4/8.4.15/bin/php",
+            "command": "php",
             "args": [
-                "/Users/aminjon/Herd/ecom/artisan",
+                "artisan",
                 "boost:mcp"
             ]
         },
         "herd": {
-            "command": "/opt/homebrew/Cellar/php@8.4/8.4.15/bin/php",
+            "command": "php",
             "args": [
                 "/Applications/Herd.app/Contents/Resources/herd-mcp.phar"
             ],
