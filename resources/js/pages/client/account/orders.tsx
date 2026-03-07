@@ -2,9 +2,13 @@ import { Pagination } from '@/components/pagination';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import GetStatusBadge from '@/helper/getStatusBadge';
 import AppAccountLayout from '@/layouts/app/client/account/app-account-layout';
-import { Link } from '@inertiajs/react';
+import { Link, router } from '@inertiajs/react';
+import { useState } from 'react';
 
 interface Order {
     id: number;
@@ -33,9 +37,47 @@ interface PaginatedData<T> {
 
 interface Props {
     orders: PaginatedData<Order>;
+    filters: {
+        search?: string;
+        status?: string;
+        date_from?: string;
+        date_to?: string;
+    };
 }
 
-export default function AccountOrders({ orders }: Props) {
+export default function AccountOrders({ orders, filters: initialFilters }: Props) {
+    const [filters, setFilters] = useState({
+        search: initialFilters.search ?? '',
+        status: initialFilters.status ?? 'all',
+        date_from: initialFilters.date_from ?? '',
+        date_to: initialFilters.date_to ?? '',
+    });
+
+    function applyFilters(): void {
+        router.get(
+            '/account/orders',
+            {
+                search: filters.search || undefined,
+                status: filters.status === 'all' ? undefined : filters.status,
+                date_from: filters.date_from || undefined,
+                date_to: filters.date_to || undefined,
+                page: 1,
+            },
+            { preserveScroll: true, preserveState: true },
+        );
+    }
+
+    function resetFilters(): void {
+        setFilters({
+            search: '',
+            status: 'all',
+            date_from: '',
+            date_to: '',
+        });
+
+        router.get('/account/orders', {}, { preserveScroll: true });
+    }
+
     return (
         <AppAccountLayout
             activePath={'/account/orders'}
@@ -46,6 +88,89 @@ export default function AccountOrders({ orders }: Props) {
                     <CardTitle>Все заказы</CardTitle>
                 </CardHeader>
                 <CardContent>
+                    <div className="mb-4 rounded-lg border p-4">
+                        <div className="grid gap-3 md:grid-cols-5">
+                            <div className="space-y-1">
+                                <Label htmlFor="search">Поиск по номеру</Label>
+                                <Input
+                                    id="search"
+                                    placeholder="Например: 123456"
+                                    value={filters.search}
+                                    onChange={(event) =>
+                                        setFilters((current) => ({
+                                            ...current,
+                                            search: event.target.value,
+                                        }))
+                                    }
+                                    onKeyDown={(event) => {
+                                        if (event.key === 'Enter') {
+                                            applyFilters();
+                                        }
+                                    }}
+                                />
+                            </div>
+                            <div className="space-y-1">
+                                <Label>Статус</Label>
+                                <Select
+                                    value={filters.status}
+                                    onValueChange={(value) =>
+                                        setFilters((current) => ({
+                                            ...current,
+                                            status: value,
+                                        }))
+                                    }
+                                >
+                                    <SelectTrigger>
+                                        <SelectValue placeholder="Все статусы" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="all">Все статусы</SelectItem>
+                                        <SelectItem value="pending">В обработке</SelectItem>
+                                        <SelectItem value="processing">Обрабатывается</SelectItem>
+                                        <SelectItem value="shipped">Отправлен</SelectItem>
+                                        <SelectItem value="delivered">Доставлен</SelectItem>
+                                        <SelectItem value="cancelled">Отменён</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div className="space-y-1">
+                                <Label htmlFor="date_from">Дата от</Label>
+                                <Input
+                                    id="date_from"
+                                    type="date"
+                                    value={filters.date_from}
+                                    onChange={(event) =>
+                                        setFilters((current) => ({
+                                            ...current,
+                                            date_from: event.target.value,
+                                        }))
+                                    }
+                                />
+                            </div>
+                            <div className="space-y-1">
+                                <Label htmlFor="date_to">Дата до</Label>
+                                <Input
+                                    id="date_to"
+                                    type="date"
+                                    value={filters.date_to}
+                                    onChange={(event) =>
+                                        setFilters((current) => ({
+                                            ...current,
+                                            date_to: event.target.value,
+                                        }))
+                                    }
+                                />
+                            </div>
+                            <div className="flex items-end gap-2">
+                                <Button onClick={applyFilters} className="w-full">
+                                    Применить
+                                </Button>
+                                <Button variant="outline" onClick={resetFilters} className="w-full">
+                                    Сбросить
+                                </Button>
+                            </div>
+                        </div>
+                    </div>
                     {orders.data.length > 0 ? (
                         <div className="space-y-4">
                             <div className="overflow-x-auto">
@@ -118,16 +243,43 @@ export default function AccountOrders({ orders }: Props) {
                                                     )}
                                                 </td>
                                                 <td className="px-2 py-3 text-right">
-                                                    <Link
-                                                        href={`/account/orders/${order.id}`}
-                                                    >
+                                                    <div className="flex justify-end gap-2">
+                                                        {(order.order_status === 'pending' ||
+                                                            order.order_status === 'processing') && (
+                                                            <Button
+                                                                variant="destructive"
+                                                                size="sm"
+                                                                onClick={() =>
+                                                                    router.patch(
+                                                                        `/account/orders/${order.id}/cancel`,
+                                                                    )
+                                                                }
+                                                            >
+                                                                Отменить
+                                                            </Button>
+                                                        )}
                                                         <Button
-                                                            variant="ghost"
+                                                            variant="outline"
                                                             size="sm"
+                                                            onClick={() =>
+                                                                router.post(
+                                                                    `/account/orders/${order.id}/repeat`,
+                                                                )
+                                                            }
                                                         >
-                                                            Подробнее
+                                                            Повторить
                                                         </Button>
-                                                    </Link>
+                                                        <Link
+                                                            href={`/account/orders/${order.id}`}
+                                                        >
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="sm"
+                                                            >
+                                                                Подробнее
+                                                            </Button>
+                                                        </Link>
+                                                    </div>
                                                 </td>
                                             </tr>
                                         ))}

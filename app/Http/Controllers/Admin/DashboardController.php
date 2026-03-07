@@ -3,9 +3,12 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\DashboardMetricsRequest;
+use App\Models\Cart;
 use App\Models\Order;
 use App\Models\Product;
 use App\Models\ProductReview;
+use App\Models\ProductViewEvent;
 use App\Models\User;
 use App\Models\Vendor;
 use Illuminate\Http\RedirectResponse;
@@ -15,11 +18,15 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
 use Inertia\Response;
+use Spatie\Permission\Models\Role;
 
 class DashboardController extends Controller
 {
-    public function index(): Response
+    public function index(DashboardMetricsRequest $request): Response
     {
+        $period = $request->validated('period', '30');
+        $periodStart = $this->resolvePeriodStart($period);
+
         $todayRevenue = Order::where('payment_status', true)
             ->whereDate('created_at', Carbon::today())
             ->sum('amount');
@@ -27,6 +34,11 @@ class DashboardController extends Controller
         $yesterdayRevenue = Order::where('payment_status', true)
             ->whereDate('created_at', Carbon::yesterday())
             ->sum('amount');
+
+        $hasUserRole = Role::query()
+            ->where('name', 'user')
+            ->where('guard_name', 'web')
+            ->exists();
 
         $statistics = [
             'total_revenue' => Order::where('payment_status', true)->sum('amount'),
@@ -36,7 +48,7 @@ class DashboardController extends Controller
             'pending_orders' => Order::where('order_status', 'pending')->count(),
             'total_products' => Product::count(),
             'pending_products' => Product::where('is_approved', false)->count(),
-            'total_customers' => User::role('user')->count(),
+            'total_customers' => $hasUserRole ? User::role('user')->count() : User::count(),
             'total_vendors' => Vendor::count(),
             'pending_vendors' => Vendor::where('status', false)->count(),
             'total_reviews' => ProductReview::count(),
@@ -84,6 +96,63 @@ class DashboardController extends Controller
             'active' => Product::whereNotNull('vendor_id')->where('status', true)->count(),
         ];
 
+        $viewerUsersQuery = ProductViewEvent::query()
+            ->whereNotNull('user_id');
+        $cartUsersQuery = Cart::query();
+        $orderUsersQuery = Order::query()
+            ->where('order_status', '!=', 'cancelled');
+
+        if ($periodStart !== null) {
+            $viewerUsersQuery->where('viewed_at', '>=', $periodStart);
+            $cartUsersQuery->where('created_at', '>=', $periodStart);
+            $orderUsersQuery->where('created_at', '>=', $periodStart);
+        }
+
+        $viewerUsers = $viewerUsersQuery
+            ->distinct('user_id')
+            ->count('user_id');
+        $cartUsers = $cartUsersQuery
+            ->distinct('user_id')
+            ->count('user_id');
+        $orderUsers = $orderUsersQuery
+            ->distinct('user_id')
+            ->count('user_id');
+
+        $funnelMetrics = [
+            'viewers' => $viewerUsers,
+            'cart_users' => $cartUsers,
+            'buyers' => $orderUsers,
+            'view_to_cart' => $viewerUsers > 0 ? round(($cartUsers / $viewerUsers) * 100, 2) : 0.0,
+            'cart_to_order' => $cartUsers > 0 ? round(($orderUsers / $cartUsers) * 100, 2) : 0.0,
+            'view_to_order' => $viewerUsers > 0 ? round(($orderUsers / $viewerUsers) * 100, 2) : 0.0,
+        ];
+
+        $topProductsQuery = Product::query()
+            ->join('order_products', 'order_products.product_id', '=', 'products.id')
+            ->join('orders', 'orders.id', '=', 'order_products.order_id')
+            ->where('orders.order_status', '!=', 'cancelled')
+            ->groupBy('products.id', 'products.name', 'products.thumb_image')
+            ->select('products.id', 'products.name', 'products.thumb_image')
+            ->selectRaw('sum(order_products.quantity) as sold_qty')
+            ->selectRaw('sum(order_products.line_total) as gross_revenue')
+            ->selectRaw('count(distinct order_products.order_id) as orders_count')
+            ->orderByDesc('sold_qty')
+            ->limit(5);
+
+        if ($periodStart !== null) {
+            $topProductsQuery->where('orders.created_at', '>=', $periodStart);
+        }
+
+        $topProducts = $topProductsQuery
+            ->get()
+            ->map(function ($item) {
+                $item->sold_qty = (int) $item->sold_qty;
+                $item->orders_count = (int) $item->orders_count;
+                $item->gross_revenue = (float) $item->gross_revenue;
+
+                return $item;
+            });
+
         return Inertia::render('admin/dashboard', [
             'statistics' => $statistics,
             'orderStats' => $orderStats,
@@ -93,7 +162,20 @@ class DashboardController extends Controller
             'pendingReviews' => $pendingReviews,
             'vendorProducts' => $vendorProducts,
             'vendorProductStats' => $vendorProductStats,
+            'metricsPeriod' => $period,
+            'funnelMetrics' => $funnelMetrics,
+            'topProducts' => $topProducts,
         ]);
+    }
+
+    private function resolvePeriodStart(string $period): ?Carbon
+    {
+        return match ($period) {
+            '7' => now()->subDays(7),
+            '30' => now()->subDays(30),
+            '90' => now()->subDays(90),
+            default => null,
+        };
     }
 
     public function approveVendor(Vendor $vendor): RedirectResponse

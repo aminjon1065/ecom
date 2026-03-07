@@ -101,7 +101,7 @@ class ProductController extends Controller
     {
         $validated = $request->validate([
             'field' => ['required', 'string', 'in:price,qty,sku'],
-            'value' => ['required'],
+            'value' => ['present'],
         ]);
 
         $field = $validated['field'];

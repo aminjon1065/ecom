@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Client;
 
 use App\Http\Controllers\Controller;
 use App\Models\Cart;
+use App\Models\ShippingRules;
+use App\Services\Product\RecommendationService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -12,15 +14,80 @@ use Inertia\Response;
 
 class CartController extends Controller
 {
+    public function __construct(
+        private readonly RecommendationService $recommendationService,
+    ) {}
+
     public function index(): Response
     {
         $cartItems = Cart::where('user_id', Auth::id())
             ->with(['product:id,name,slug,thumb_image,price,offer_price,offer_start_date,offer_end_date,qty,status'])
             ->get();
 
+        $recommendedProducts = $this->recommendationService->cartRecommendations(
+            productIds: $cartItems->pluck('product_id')->all(),
+            limit: 5,
+        );
+
+        $subtotal = round($cartItems->sum(function (Cart $cartItem): float {
+            $product = $cartItem->product;
+            if (! $product) {
+                return 0.0;
+            }
+
+            return $this->getEffectivePrice($product) * $cartItem->quantity;
+        }), 2);
+
+        $savings = round($cartItems->sum(function (Cart $cartItem): float {
+            $product = $cartItem->product;
+            if (! $product) {
+                return 0.0;
+            }
+
+            $basePrice = (float) $product->price;
+            $effectivePrice = $this->getEffectivePrice($product);
+
+            return max(0, ($basePrice - $effectivePrice) * $cartItem->quantity);
+        }), 2);
+
+        $freeShippingRule = ShippingRules::query()
+            ->where('status', true)
+            ->where('type', 'min_cost')
+            ->whereNotNull('min_cost')
+            ->orderBy('min_cost')
+            ->first();
+
+        $freeShippingThreshold = $freeShippingRule?->min_cost !== null
+            ? (float) $freeShippingRule->min_cost
+            : null;
+
+        $remainingToFreeShipping = $freeShippingThreshold !== null
+            ? max(0, round($freeShippingThreshold - $subtotal, 2))
+            : null;
+
         return Inertia::render('client/cart', [
             'cartItems' => $cartItems,
+            'recommendedProducts' => $recommendedProducts,
+            'cartSummary' => [
+                'subtotal' => $subtotal,
+                'savings' => $savings,
+                'free_shipping_threshold' => $freeShippingThreshold,
+                'remaining_to_free_shipping' => $remainingToFreeShipping,
+            ],
         ]);
+    }
+
+    private function getEffectivePrice(object $product): float
+    {
+        if (! $product->offer_price || ! $product->offer_start_date || ! $product->offer_end_date) {
+            return (float) $product->price;
+        }
+
+        if (now()->between($product->offer_start_date, $product->offer_end_date)) {
+            return (float) $product->offer_price;
+        }
+
+        return (float) $product->price;
     }
 
     public function store(Request $request): RedirectResponse

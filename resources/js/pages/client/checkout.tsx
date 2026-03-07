@@ -6,8 +6,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
-import { useState, FormEvent, useEffect } from 'react';
-import { ShoppingBag } from 'lucide-react';
+import { useState, FormEvent, useEffect, useMemo } from 'react';
+import { LockKeyhole, RotateCcw, ShoppingBag, Truck } from 'lucide-react';
 
 interface CartItem {
     id: number;
@@ -55,6 +55,11 @@ interface CheckoutProps {
     flash?: { appliedCoupon?: AppliedCoupon | null };
 }
 
+interface InertiaPageProps {
+    [key: string]: unknown;
+    errors?: Record<string, string>;
+}
+
 const TYPE_LABELS: Record<string, string> = {
     flat: 'Фиксированная',
     free_shipping: 'Бесплатная',
@@ -62,16 +67,29 @@ const TYPE_LABELS: Record<string, string> = {
 };
 
 export default function Checkout({ cartItems, addresses, shippingRules, flash }: CheckoutProps) {
+    const page = usePage<InertiaPageProps>();
+    const serverErrors = page.props.errors ?? {};
+    const activeShippingRules = useMemo(
+        () => shippingRules.filter((rule) => rule.status),
+        [shippingRules],
+    );
+    const [idempotencyKey, setIdempotencyKey] = useState(() =>
+        typeof crypto !== 'undefined' && 'randomUUID' in crypto
+            ? crypto.randomUUID()
+            : `${Date.now()}-${Math.random().toString(36).slice(2)}`
+    );
+    const [placingOrder, setPlacingOrder] = useState(false);
     const [selectedAddressId, setSelectedAddressId] = useState<number | null>(
         addresses.length > 0 ? addresses[0].id : null
     );
     const [selectedShippingId, setSelectedShippingId] = useState<number | null>(
-        shippingRules.length > 0 ? shippingRules[0].id : null
+        activeShippingRules.length > 0 ? activeShippingRules[0].id : null
     );
     const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<'cash' | 'card'>('cash');
     const [couponCode, setCouponCode] = useState('');
     const [appliedCoupon, setAppliedCoupon] = useState<AppliedCoupon | null>(null);
     const [couponError, setCouponError] = useState<string | null>(null);
+    const [checkoutError, setCheckoutError] = useState<string | null>(null);
     const [showAddAddressForm, setShowAddAddressForm] = useState(false);
     const [newAddress, setNewAddress] = useState({ address: '', description: '' });
 
@@ -82,6 +100,51 @@ export default function Checkout({ cartItems, addresses, shippingRules, flash }:
             setCouponError(null);
         }
     }, [flash?.appliedCoupon]);
+
+    useEffect(() => {
+        if (typeof window === 'undefined') {
+            return;
+        }
+
+        const raw = window.localStorage.getItem('checkout:preferences');
+        if (!raw) {
+            return;
+        }
+
+        try {
+            const parsed = JSON.parse(raw) as {
+                addressId?: number | null;
+                shippingId?: number | null;
+                paymentMethod?: 'cash' | 'card';
+            };
+
+            if (parsed.addressId && addresses.some((address) => address.id === parsed.addressId)) {
+                setSelectedAddressId(parsed.addressId);
+            }
+
+            if (parsed.shippingId && activeShippingRules.some((rule) => rule.id === parsed.shippingId)) {
+                setSelectedShippingId(parsed.shippingId);
+            }
+
+            if (parsed.paymentMethod === 'cash' || parsed.paymentMethod === 'card') {
+                setSelectedPaymentMethod(parsed.paymentMethod);
+            }
+        } catch {
+            window.localStorage.removeItem('checkout:preferences');
+        }
+    }, [addresses, activeShippingRules]);
+
+    useEffect(() => {
+        if (typeof window === 'undefined') {
+            return;
+        }
+
+        window.localStorage.setItem('checkout:preferences', JSON.stringify({
+            addressId: selectedAddressId,
+            shippingId: selectedShippingId,
+            paymentMethod: selectedPaymentMethod,
+        }));
+    }, [selectedAddressId, selectedShippingId, selectedPaymentMethod]);
 
     const getEffectivePrice = (item: CartItem): number => {
         const { product } = item;
@@ -134,6 +197,17 @@ export default function Checkout({ cartItems, addresses, shippingRules, flash }:
         });
     };
 
+    const handleRemoveCoupon = () => {
+        router.delete('/checkout/coupon', {
+            preserveScroll: true,
+            onSuccess: () => {
+                setAppliedCoupon(null);
+                setCouponCode('');
+                setCouponError(null);
+            },
+        });
+    };
+
     const handleAddAddress = (e: FormEvent) => {
         e.preventDefault();
         router.post('/account/addresses', newAddress, {
@@ -145,12 +219,14 @@ export default function Checkout({ cartItems, addresses, shippingRules, flash }:
     };
 
     const handlePlaceOrder = () => {
+        setCheckoutError(null);
+
         if (!selectedAddressId) {
-            alert('Пожалуйста, выберите адрес доставки');
+            setCheckoutError('Выберите адрес доставки, чтобы продолжить.');
             return;
         }
         if (!selectedShippingId) {
-            alert('Пожалуйста, выберите способ доставки');
+            setCheckoutError('Выберите способ доставки, чтобы продолжить.');
             return;
         }
         router.post('/checkout', {
@@ -158,6 +234,18 @@ export default function Checkout({ cartItems, addresses, shippingRules, flash }:
             payment_method: selectedPaymentMethod,
             shipping_rule_id: selectedShippingId,
             coupon_code: appliedCoupon?.code || null,
+            idempotency_key: idempotencyKey,
+        }, {
+            preserveScroll: true,
+            onStart: () => setPlacingOrder(true),
+            onFinish: () => setPlacingOrder(false),
+            onError: () => {
+                setIdempotencyKey(
+                    typeof crypto !== 'undefined' && 'randomUUID' in crypto
+                        ? crypto.randomUUID()
+                        : `${Date.now()}-${Math.random().toString(36).slice(2)}`
+                );
+            },
         });
     };
 
@@ -197,6 +285,11 @@ export default function Checkout({ cartItems, addresses, shippingRules, flash }:
     const shippingCost = getShippingCost();
     const discount = getDiscount();
     const total = calculateTotal();
+    const selectedAddress = addresses.find((address) => address.id === selectedAddressId);
+    const selectedShipping = activeShippingRules.find((rule) => rule.id === selectedShippingId);
+    const placeOrderDisabled = placingOrder || !selectedAddressId || !selectedShippingId;
+    const finalCheckoutError = checkoutError ?? serverErrors.checkout ?? null;
+    const finalCouponError = couponError ?? serverErrors.code ?? serverErrors.coupon_code ?? null;
 
     return (
         <AppHeaderLayout>
@@ -323,9 +416,7 @@ export default function Checkout({ cartItems, addresses, shippingRules, flash }:
                             <h2 className="text-xl font-bold mb-4">Способ доставки</h2>
                             <Separator className="mb-4" />
                             <div className="space-y-3">
-                                {shippingRules
-                                    .filter(rule => rule.status)
-                                    .map((rule) => (
+                                {activeShippingRules.map((rule) => (
                                         <label
                                             key={rule.id}
                                             className="flex items-center justify-between p-4 border rounded-lg cursor-pointer hover:bg-muted/50 transition-colors"
@@ -384,9 +475,25 @@ export default function Checkout({ cartItems, addresses, shippingRules, flash }:
 
                     {/* Order Summary Sidebar */}
                     <div className="lg:col-span-1">
-                        <Card className="p-6 sticky top-4">
+                        <Card className="sticky top-24 p-6">
                             <h2 className="text-xl font-bold mb-4">Итого</h2>
                             <Separator className="mb-4" />
+
+                            <div className="mb-4 rounded-lg border bg-muted/30 p-3 text-sm">
+                                <p className="font-medium">Проверка перед оплатой</p>
+                                <p className="mt-2 text-muted-foreground">
+                                    Адрес: {selectedAddress ? selectedAddress.address : 'Не выбран'}
+                                </p>
+                                <p className="mt-1 text-muted-foreground">
+                                    Доставка: {selectedShipping ? selectedShipping.name : 'Не выбрана'}
+                                </p>
+                                <p className="mt-1 text-muted-foreground">
+                                    Оплата: {selectedPaymentMethod === 'cash' ? 'Наличные' : 'Карта'}
+                                </p>
+                                <p className="mt-2 text-xs text-muted-foreground">
+                                    Выбор сохраняется автоматически.
+                                </p>
+                            </div>
 
                             {/* Coupon Code */}
                             <div className="mb-4">
@@ -406,8 +513,8 @@ export default function Checkout({ cartItems, addresses, shippingRules, flash }:
                                         Применить
                                     </Button>
                                 </div>
-                                {couponError && (
-                                    <p className="text-sm text-destructive mt-1">{couponError}</p>
+                                {finalCouponError && (
+                                    <p className="text-sm text-destructive mt-1">{finalCouponError}</p>
                                 )}
                                 {appliedCoupon && (
                                     <div className="mt-2 flex items-center justify-between">
@@ -417,7 +524,7 @@ export default function Checkout({ cartItems, addresses, shippingRules, flash }:
                                         <button
                                             type="button"
                                             className="text-xs text-muted-foreground underline"
-                                            onClick={() => { setAppliedCoupon(null); setCouponCode(''); }}
+                                            onClick={handleRemoveCoupon}
                                         >
                                             Убрать
                                         </button>
@@ -426,6 +533,24 @@ export default function Checkout({ cartItems, addresses, shippingRules, flash }:
                             </div>
 
                             <Separator className="mb-4" />
+
+                            <div className="mb-4 rounded-lg border bg-muted/20 p-3">
+                                <p className="text-sm font-medium">Безопасная покупка</p>
+                                <div className="mt-2 space-y-2 text-xs text-muted-foreground">
+                                    <p className="flex items-center gap-2">
+                                        <LockKeyhole className="h-3.5 w-3.5 text-primary" />
+                                        Защищённая оплата и проверка транзакций.
+                                    </p>
+                                    <p className="flex items-center gap-2">
+                                        <Truck className="h-3.5 w-3.5 text-primary" />
+                                        Отслеживание заказа после подтверждения.
+                                    </p>
+                                    <p className="flex items-center gap-2">
+                                        <RotateCcw className="h-3.5 w-3.5 text-primary" />
+                                        Возврат в течение 14 дней по правилам магазина.
+                                    </p>
+                                </div>
+                            </div>
 
                             <div className="space-y-3 mb-6">
                                 <div className="flex justify-between text-muted-foreground">
@@ -461,9 +586,15 @@ export default function Checkout({ cartItems, addresses, shippingRules, flash }:
                                 onClick={handlePlaceOrder}
                                 className="w-full"
                                 size="lg"
+                                disabled={placeOrderDisabled}
                             >
-                                Оформить заказ
+                                {placingOrder ? 'Оформляем заказ...' : 'Оформить заказ'}
                             </Button>
+                            {finalCheckoutError && (
+                                <p className="mt-2 rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+                                    {finalCheckoutError}
+                                </p>
+                            )}
 
                             <Button
                                 asChild

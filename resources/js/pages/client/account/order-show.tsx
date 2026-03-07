@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import AppHeaderLayout from '@/layouts/app/client/app-header-layout';
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
 import { ArrowLeft, Calendar, CreditCard, Download, Hash, Package } from 'lucide-react';
 
 interface OrderProduct {
@@ -71,12 +71,37 @@ export default function OrderShow({ order }: Props) {
 
             <div className="container mx-auto px-4 py-8">
                 <div className="mb-6 flex items-center justify-between">
-                    <Link href="/account/orders">
-                        <Button variant="ghost" size="sm">
-                            <ArrowLeft className="mr-2 h-4 w-4" />
-                            Назад к заказам
+                    <div className="flex items-center gap-2">
+                        <Link href="/account/orders">
+                            <Button variant="ghost" size="sm">
+                                <ArrowLeft className="mr-2 h-4 w-4" />
+                                Назад к заказам
+                            </Button>
+                        </Link>
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() =>
+                                router.post(`/account/orders/${order.id}/repeat`)
+                            }
+                        >
+                            Повторить заказ
                         </Button>
-                    </Link>
+                        {(order.order_status === 'pending' ||
+                            order.order_status === 'processing') && (
+                            <Button
+                                variant="destructive"
+                                size="sm"
+                                onClick={() =>
+                                    router.patch(
+                                        `/account/orders/${order.id}/cancel`,
+                                    )
+                                }
+                            >
+                                Отменить заказ
+                            </Button>
+                        )}
+                    </div>
                     <a href={`/account/orders/${order.id}/invoice`}>
                         <Button variant="outline" size="sm">
                             <Download className="mr-2 h-4 w-4" />

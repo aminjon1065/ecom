@@ -19,6 +19,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property-read int|null $galleries_count
  * @property-read \App\Models\Product $product
  * @property-read \App\Models\User $user
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ProductReview newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ProductReview newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ProductReview query()
@@ -30,6 +31,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ProductReview whereStatus($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ProductReview whereUpdatedAt($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|ProductReview whereUserId($value)
+ *
  * @mixin \Eloquent
  */
 class ProductReview extends Model
@@ -39,11 +41,14 @@ class ProductReview extends Model
         'user_id',
         'review',
         'rating',
-        'status'
+        'status',
+        'verified_purchase',
     ];
+
     protected $casts = [
         'rating' => 'integer',
-        'status' => 'boolean'
+        'status' => 'boolean',
+        'verified_purchase' => 'boolean',
     ];
 
     public function product(): BelongsTo

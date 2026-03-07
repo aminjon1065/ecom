@@ -106,6 +106,24 @@ export interface VendorProductStats {
     active: number;
 }
 
+export interface FunnelMetrics {
+    viewers: number;
+    cart_users: number;
+    buyers: number;
+    view_to_cart: number;
+    cart_to_order: number;
+    view_to_order: number;
+}
+
+export interface TopProduct {
+    id: number;
+    name: string;
+    thumb_image: string;
+    sold_qty: number;
+    gross_revenue: number;
+    orders_count: number;
+}
+
 export interface DashboardProps {
     statistics: DashboardStatistics;
     orderStats: OrderStats;
@@ -115,4 +133,7 @@ export interface DashboardProps {
     pendingReviews: PendingReview[];
     vendorProducts: VendorProduct[];
     vendorProductStats: VendorProductStats;
+    metricsPeriod: string;
+    funnelMetrics: FunnelMetrics;
+    topProducts: TopProduct[];
 }

@@ -3,24 +3,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import AppAccountLayout from '@/layouts/app/client/account/app-account-layout';
+import { SharedData } from '@/types';
 import { Link, useForm, usePage } from '@inertiajs/react';
 import { Mail, Phone, Save, User } from 'lucide-react';
 
-interface AuthUser {
-    id: number;
-    name: string;
-    email: string;
-    phone?: string;
-}
-
-interface PageProps {
-    auth: {
-        user: AuthUser;
-    };
-}
-
 export default function AccountProfile() {
-    const { auth } = usePage<PageProps>().props;
+    const { auth } = usePage<SharedData>().props;
     const { data, setData, put, processing, errors, isDirty } = useForm({
         name: auth.user.name,
         phone: auth.user.phone || '',

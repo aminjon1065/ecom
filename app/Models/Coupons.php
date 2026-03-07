@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
  * @property int $id
@@ -18,6 +19,7 @@ use Illuminate\Database\Eloquent\Model;
  * @property int $total_used
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Coupons newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Coupons newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Coupons query()
@@ -34,6 +36,7 @@ use Illuminate\Database\Eloquent\Model;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Coupons whereStatus($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Coupons whereTotalUsed($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Coupons whereUpdatedAt($value)
+ *
  * @mixin \Eloquent
  */
 class Coupons extends Model
@@ -48,10 +51,35 @@ class Coupons extends Model
         'discount_type',
         'discount',
         'status',
-        'total_used'
+        'total_used',
+        'starts_at',
+        'ends_at',
+        'usage_limit',
+        'usage_per_user',
+        'min_subtotal',
+        'is_active',
+        'first_order_only',
     ];
+
     protected $casts = [
-        'status' => 'boolean'
+        'status' => 'boolean',
+        'is_active' => 'boolean',
+        'first_order_only' => 'boolean',
+        'start_date' => 'datetime',
+        'end_date' => 'datetime',
+        'starts_at' => 'datetime',
+        'ends_at' => 'datetime',
+        'discount' => 'float',
+        'min_subtotal' => 'float',
+        'usage_limit' => 'integer',
+        'usage_per_user' => 'integer',
+        'quantity' => 'integer',
+        'max_use' => 'integer',
+        'total_used' => 'integer',
     ];
-    
+
+    public function usages(): HasMany
+    {
+        return $this->hasMany(CouponUsage::class, 'coupon_id');
+    }
 }

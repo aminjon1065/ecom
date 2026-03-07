@@ -22,6 +22,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\OrderProduct> $products
  * @property-read int|null $products_count
  * @property-read \App\Models\User $user
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Order newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Order newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Order query()
@@ -37,6 +38,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Order whereTransactionId($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Order whereUpdatedAt($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Order whereUserId($value)
+ *
  * @mixin \Eloquent
  */
 class Order extends Model
@@ -44,17 +46,28 @@ class Order extends Model
     protected $fillable = [
         'invoice_id',
         'transaction_id',
+        'idempotency_key',
         'user_id',
         'amount',
+        'subtotal',
+        'discount_total',
+        'shipping_total',
+        'grand_total',
         'product_quantity',
         'payment_method',
         'payment_status',
         'coupon',
-        'order_status'
+        'coupon_code',
+        'order_status',
     ];
 
     protected $casts = [
-        'payment_status' => 'boolean'
+        'payment_status' => 'boolean',
+        'amount' => 'float',
+        'subtotal' => 'float',
+        'discount_total' => 'float',
+        'shipping_total' => 'float',
+        'grand_total' => 'float',
     ];
 
     public function user(): BelongsTo

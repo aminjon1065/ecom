@@ -89,6 +89,8 @@ export default function ProductsIndex({ products, productsMeta, categories, bran
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const loadMoreRef = useRef<HTMLDivElement>(null);
+  const observerInitializedRef = useRef(false);
+  const blockInfiniteScrollUntilRef = useRef(0);
 
   const hasMore = productsMeta.current_page < productsMeta.last_page;
 
@@ -118,11 +120,21 @@ export default function ProductsIndex({ products, productsMeta, categories, bran
   useEffect(() => {
     const el = loadMoreRef.current;
     if (!el) return;
+    observerInitializedRef.current = false;
 
     const observer = new IntersectionObserver(
       (entries) => {
         if (entries[0].isIntersecting) {
+          if (Date.now() < blockInfiniteScrollUntilRef.current) {
+            return;
+          }
+          if (!observerInitializedRef.current) {
+            observerInitializedRef.current = true;
+            return;
+          }
           loadMore();
+        } else {
+          observerInitializedRef.current = true;
         }
       },
       { rootMargin: '200px' },
@@ -192,6 +204,65 @@ export default function ProductsIndex({ products, productsMeta, categories, bran
     filters.min_price,
     filters.max_price,
   ].filter(Boolean).length;
+  const selectedCategory = categories.find((category) => category.id === filters.category);
+  const selectedBrand = brands.find((brand) => brand.id === filters.brand);
+  const activeFilterChips: { key: string; label: string; clear: () => void }[] = [];
+
+  if (filters.search) {
+    activeFilterChips.push({
+      key: 'search',
+      label: `Поиск: ${filters.search}`,
+      clear: () => {
+        setSearchQuery('');
+        handleFilterChange({ search: undefined });
+      },
+    });
+  }
+
+  if (selectedCategory) {
+    activeFilterChips.push({
+      key: 'category',
+      label: `Категория: ${selectedCategory.name}`,
+      clear: () => handleFilterChange({ category: undefined }),
+    });
+  }
+
+  if (selectedBrand) {
+    activeFilterChips.push({
+      key: 'brand',
+      label: `Бренд: ${selectedBrand.name}`,
+      clear: () => handleFilterChange({ brand: undefined }),
+    });
+  }
+
+  if (filters.min_price || filters.max_price) {
+    activeFilterChips.push({
+      key: 'price',
+      label: `Цена: ${filters.min_price ?? 0} - ${filters.max_price ?? '∞'} сом.`,
+      clear: () => {
+        setMinPrice('');
+        setMaxPrice('');
+        handleFilterChange({ min_price: undefined, max_price: undefined });
+      },
+    });
+  }
+
+  if (filters.sort && filters.sort !== 'latest') {
+    const sortLabel = filters.sort === 'price_asc'
+      ? 'Цена ↑'
+      : filters.sort === 'price_desc'
+        ? 'Цена ↓'
+        : 'Популярные';
+
+    activeFilterChips.push({
+      key: 'sort',
+      label: `Сортировка: ${sortLabel}`,
+      clear: () => {
+        setSortValue('latest');
+        handleFilterChange({ sort: 'latest' });
+      },
+    });
+  }
 
   const FilterSidebar = () => (
     <div className="space-y-6">
@@ -368,14 +439,57 @@ export default function ProductsIndex({ products, productsMeta, categories, bran
           </div>
         </div>
 
+        <div className="mb-4 flex flex-wrap gap-2">
+          <Button
+            variant={sortValue === 'latest' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => {
+              setSortValue('latest');
+              handleFilterChange({ sort: 'latest' });
+            }}
+          >
+            Новинки
+          </Button>
+          <Button
+            variant={sortValue === 'popular' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => {
+              setSortValue('popular');
+              handleFilterChange({ sort: 'popular' });
+            }}
+          >
+            Популярные
+          </Button>
+          <Button
+            variant={sortValue === 'price_asc' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => {
+              setSortValue('price_asc');
+              handleFilterChange({ sort: 'price_asc' });
+            }}
+          >
+            Сначала дешевле
+          </Button>
+          <Button
+            variant={sortValue === 'price_desc' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => {
+              setSortValue('price_desc');
+              handleFilterChange({ sort: 'price_desc' });
+            }}
+          >
+            Сначала дороже
+          </Button>
+        </div>
+
         <div className="flex flex-col md:flex-row gap-6">
           <aside className="hidden md:block w-64 shrink-0">
-            {FilterSidebar()}
+            <FilterSidebar />
           </aside>
 
           {mobileFiltersOpen && (
             <div className="md:hidden mb-6">
-              {FilterSidebar()}
+              <FilterSidebar />
             </div>
           )}
 
@@ -383,12 +497,40 @@ export default function ProductsIndex({ products, productsMeta, categories, bran
             <div className="mb-4 text-sm text-muted-foreground">
               Найдено товаров: {productsMeta.total}
             </div>
+            {activeFilterChips.length > 0 && (
+              <div className="mb-4 flex flex-wrap gap-2">
+                {activeFilterChips.map((chip) => (
+                  <button
+                    key={chip.key}
+                    onClick={chip.clear}
+                    className="inline-flex items-center gap-1 rounded-full border bg-muted px-3 py-1 text-xs transition-colors hover:bg-muted/70"
+                  >
+                    {chip.label}
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                ))}
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="h-7 px-2 text-xs"
+                  onClick={clearFilters}
+                >
+                  Сбросить всё
+                </Button>
+              </div>
+            )}
 
             {products.length > 0 ? (
               <>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                   {products.map((product) => (
-                    <ProductCard key={product.id} product={product} />
+                    <ProductCard
+                      key={product.id}
+                      product={product}
+                      onQuickAction={() => {
+                        blockInfiniteScrollUntilRef.current = Date.now() + 2000;
+                      }}
+                    />
                   ))}
                 </div>
 
@@ -401,18 +543,38 @@ export default function ProductsIndex({ products, productsMeta, categories, bran
             ) : (
               <Card>
                 <CardContent className="py-12 text-center">
-                  <p className="text-muted-foreground">
-                    Товары не найдены. Попробуйте изменить фильтры.
+                  <p className="font-medium">Товары не найдены</p>
+                  <p className="mt-2 text-sm text-muted-foreground">
+                    Попробуйте расширить диапазон цены, убрать часть фильтров или выбрать другую категорию.
                   </p>
-                  {activeFiltersCount > 0 && (
+                  <div className="mt-4 flex flex-wrap justify-center gap-2">
+                    {activeFiltersCount > 0 && (
+                      <Button
+                        onClick={clearFilters}
+                        variant="outline"
+                      >
+                        Сбросить фильтры
+                      </Button>
+                    )}
                     <Button
-                      onClick={clearFilters}
-                      variant="outline"
-                      className="mt-4"
+                      variant="ghost"
+                      onClick={() => {
+                        setSearchQuery('');
+                        handleFilterChange({ search: undefined });
+                      }}
                     >
-                      Сбросить фильтры
+                      Очистить поиск
                     </Button>
-                  )}
+                    <Button
+                      variant="ghost"
+                      onClick={() => {
+                        setSortValue('popular');
+                        handleFilterChange({ sort: 'popular' });
+                      }}
+                    >
+                      Показать популярные
+                    </Button>
+                  </div>
                 </CardContent>
               </Card>
             )}

@@ -66,3 +66,49 @@ it('includes source links in admin product table payload', function () {
         ->where('products.data.0.second_source_link', $product->second_source_link)
     );
 });
+
+it('returns admin product index payload when product has no brand', function () {
+    app(PermissionRegistrar::class)->forgetCachedPermissions();
+
+    $adminRole = Role::query()->firstOrCreate([
+        'name' => 'admin',
+        'guard_name' => 'web',
+    ]);
+
+    $admin = User::factory()->create();
+    $admin->assignRole($adminRole);
+
+    $category = Category::create([
+        'name' => 'Electronics',
+        'slug' => 'electronics-'.Str::lower(Str::random(6)),
+        'status' => true,
+    ]);
+
+    $product = Product::create([
+        'name' => 'Brandless Product',
+        'code' => 5002,
+        'slug' => 'brandless-product',
+        'thumb_image' => 'products/thumb.png',
+        'category_id' => $category->id,
+        'brand_id' => null,
+        'qty' => 10,
+        'short_description' => 'Short description',
+        'long_description' => 'Long description',
+        'price' => 49.99,
+        'sku' => 'BRANDLESS-5002',
+        'status' => true,
+        'is_approved' => true,
+    ]);
+
+    $response = $this
+        ->actingAs($admin)
+        ->get(route('admin.product.index'));
+
+    $response->assertSuccessful();
+
+    $response->assertInertia(fn (Assert $page) => $page
+        ->component('admin/product/index')
+        ->where('products.data.0.id', $product->id)
+        ->where('products.data.0.brand', null)
+    );
+});

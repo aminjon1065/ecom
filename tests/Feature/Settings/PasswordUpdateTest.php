@@ -2,24 +2,40 @@
 
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
+use Spatie\Permission\Models\Role;
+use Spatie\Permission\PermissionRegistrar;
 
 test('password update page is displayed', function () {
+    app(PermissionRegistrar::class)->forgetCachedPermissions();
+    $adminRole = Role::query()->firstOrCreate([
+        'name' => 'admin',
+        'guard_name' => 'web',
+    ]);
+
     $user = User::factory()->create();
+    $user->assignRole($adminRole);
 
     $response = $this
         ->actingAs($user)
-        ->get(route('user-password.edit'));
+        ->get(route('admin.user-password.edit'));
 
     $response->assertStatus(200);
 });
 
 test('password can be updated', function () {
+    app(PermissionRegistrar::class)->forgetCachedPermissions();
+    $adminRole = Role::query()->firstOrCreate([
+        'name' => 'admin',
+        'guard_name' => 'web',
+    ]);
+
     $user = User::factory()->create();
+    $user->assignRole($adminRole);
 
     $response = $this
         ->actingAs($user)
-        ->from(route('user-password.edit'))
-        ->put(route('user-password.update'), [
+        ->from(route('admin.user-password.edit'))
+        ->put(route('admin.user-password.update'), [
             'current_password' => 'password',
             'password' => 'new-password',
             'password_confirmation' => 'new-password',
@@ -27,18 +43,25 @@ test('password can be updated', function () {
 
     $response
         ->assertSessionHasNoErrors()
-        ->assertRedirect(route('user-password.edit'));
+        ->assertRedirect(route('admin.user-password.edit'));
 
     expect(Hash::check('new-password', $user->refresh()->password))->toBeTrue();
 });
 
 test('correct password must be provided to update password', function () {
+    app(PermissionRegistrar::class)->forgetCachedPermissions();
+    $adminRole = Role::query()->firstOrCreate([
+        'name' => 'admin',
+        'guard_name' => 'web',
+    ]);
+
     $user = User::factory()->create();
+    $user->assignRole($adminRole);
 
     $response = $this
         ->actingAs($user)
-        ->from(route('user-password.edit'))
-        ->put(route('user-password.update'), [
+        ->from(route('admin.user-password.edit'))
+        ->put(route('admin.user-password.update'), [
             'current_password' => 'wrong-password',
             'password' => 'new-password',
             'password_confirmation' => 'new-password',
@@ -46,5 +69,5 @@ test('correct password must be provided to update password', function () {
 
     $response
         ->assertSessionHasErrors('current_password')
-        ->assertRedirect(route('user-password.edit'));
+        ->assertRedirect(route('admin.user-password.edit'));
 });

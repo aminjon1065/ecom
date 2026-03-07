@@ -15,6 +15,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read \App\Models\Order $order
  * @property-read \App\Models\Product $product
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderProduct newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderProduct newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderProduct query()
@@ -25,6 +26,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderProduct whereQuantity($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderProduct whereUnitPrice($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|OrderProduct whereUpdatedAt($value)
+ *
  * @mixin \Eloquent
  */
 class OrderProduct extends Model
@@ -33,11 +35,18 @@ class OrderProduct extends Model
         'order_id',
         'product_id',
         'quantity',
-        'unit_price'
+        'unit_price',
+        'discount_amount',
+        'line_total',
+        'product_name',
+        'product_sku',
     ];
+
     protected $casts = [
         'quantity' => 'integer',
-        'unit_price' => 'double'
+        'unit_price' => 'double',
+        'discount_amount' => 'double',
+        'line_total' => 'double',
     ];
 
     public function product(): BelongsTo

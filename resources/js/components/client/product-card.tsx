@@ -20,6 +20,7 @@ interface ProductCardProps {
         category?: { id: number; name: string } | null;
     };
     showActions?: boolean;
+    onQuickAction?: () => void;
 }
 
 function getEffectivePrice(product: ProductCardProps['product']) {
@@ -35,24 +36,35 @@ function getEffectivePrice(product: ProductCardProps['product']) {
     return { price: product.price, original: product.price, hasDiscount: false };
 }
 
-export function ProductCard({ product, showActions = true }: ProductCardProps) {
+export function ProductCard({ product, showActions = true, onQuickAction }: ProductCardProps) {
     const { price, original, hasDiscount } = getEffectivePrice(product);
     const rating = product.reviews_avg_rating ? Number(product.reviews_avg_rating).toFixed(1) : null;
-
     const addToCart = (e: React.MouseEvent) => {
         e.preventDefault();
         e.stopPropagation();
-        router.post('/cart', { product_id: product.id }, { preserveScroll: true });
+        onQuickAction?.();
+        router.post('/cart', { product_id: product.id }, {
+            preserveScroll: true,
+            preserveState: true,
+            replace: true,
+            only: ['cartCount', 'wishlistCount', 'flash'],
+        });
     };
 
     const toggleWishlist = (e: React.MouseEvent) => {
         e.preventDefault();
         e.stopPropagation();
-        router.post('/wishlist', { product_id: product.id }, { preserveScroll: true });
+        onQuickAction?.();
+        router.post('/wishlist', { product_id: product.id }, {
+            preserveScroll: true,
+            preserveState: true,
+            replace: true,
+            only: ['cartCount', 'wishlistCount', 'flash'],
+        });
     };
 
     return (
-        <Card className="group overflow-hidden transition-shadow hover:shadow-lg">
+        <Card className="group relative overflow-hidden transition-shadow hover:shadow-lg">
             <Link href={`/products/${product.slug}`}>
                 <div className="relative aspect-square overflow-hidden bg-muted">
                     <img
@@ -71,17 +83,6 @@ export function ProductCard({ product, showActions = true }: ProductCardProps) {
                         <Badge className="absolute top-1.5 right-1.5 text-[10px] sm:top-2 sm:right-2 sm:text-xs" variant="destructive">
                             -{Math.round(((original - price) / original) * 100)}%
                         </Badge>
-                    )}
-                    {/* Action buttons: always visible on mobile, hover on desktop */}
-                    {showActions && (
-                        <div className="absolute right-1.5 bottom-1.5 flex gap-1 sm:right-2 sm:bottom-2 sm:opacity-0 sm:transition-opacity sm:group-hover:opacity-100">
-                            <Button size="icon" variant="secondary" className="h-7 w-7 shadow-sm sm:h-8 sm:w-8" onClick={toggleWishlist}>
-                                <Heart className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
-                            </Button>
-                            <Button size="icon" variant="secondary" className="h-7 w-7 shadow-sm sm:h-8 sm:w-8" onClick={addToCart}>
-                                <ShoppingCart className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
-                            </Button>
-                        </div>
                     )}
                 </div>
                 <CardContent className="p-2.5 sm:p-3">
@@ -104,6 +105,29 @@ export function ProductCard({ product, showActions = true }: ProductCardProps) {
                     )}
                 </CardContent>
             </Link>
+            {/* Action buttons: always visible on mobile, hover on desktop */}
+            {showActions && (
+                <div className="absolute right-1.5 top-1.5 z-10 flex gap-1 sm:right-2 sm:top-2 sm:opacity-0 sm:transition-opacity sm:group-hover:opacity-100">
+                    <Button
+                        type="button"
+                        size="icon"
+                        variant="secondary"
+                        className="h-7 w-7 shadow-sm sm:h-8 sm:w-8"
+                        onClick={toggleWishlist}
+                    >
+                        <Heart className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                    </Button>
+                    <Button
+                        type="button"
+                        size="icon"
+                        variant="secondary"
+                        className="h-7 w-7 shadow-sm sm:h-8 sm:w-8"
+                        onClick={addToCart}
+                    >
+                        <ShoppingCart className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+                    </Button>
+                </div>
+            )}
         </Card>
     );
 }

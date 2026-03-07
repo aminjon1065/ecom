@@ -28,6 +28,7 @@ interface PaginatedProducts {
     data: Product[];
     current_page: number;
     last_page: number;
+    path: string;
     per_page: number;
     total: number;
     links: Array<{ url: string | null; label: string; active: boolean }>;
@@ -211,7 +212,11 @@ export default function VendorProducts({ products, filters }: Props) {
                         )}
                         {products.last_page > 1 && (
                             <div className="mt-4">
-                                <Pagination links={products.links} />
+                                <Pagination
+                                    currentPage={products.current_page}
+                                    lastPage={products.last_page}
+                                    path={products.path}
+                                />
                             </div>
                         )}
                     </CardContent>

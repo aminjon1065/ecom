@@ -182,9 +182,7 @@ class ProductsImport implements ToCollection, WithHeadingRow
                 'is_approved' => $this->parseBoolean($rowData['is_approved'] ?? null, false),
             ];
 
-            if ($brand !== null) {
-                $productData['brand_id'] = $brand->id;
-            }
+            $productData['brand_id'] = $brand?->id;
 
             try {
                 Product::updateOrCreate(['code' => $code], $productData);

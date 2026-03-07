@@ -8,6 +8,7 @@ use App\Http\Controllers\Client\CartController;
 use App\Http\Controllers\Client\CheckoutController;
 use App\Http\Controllers\Client\NewsletterSubscriberController;
 use App\Http\Controllers\Client\OrderTrackingController;
+use App\Http\Controllers\Client\PriceAlertController;
 use App\Http\Controllers\Client\ProductController;
 use App\Http\Controllers\Client\UserAddressController;
 use App\Http\Controllers\Client\WishlistController;
@@ -40,6 +41,7 @@ Route::get('/products/{slug}', [ProductController::class, 'show'])->name('produc
 Route::post('/newsletter', [NewsletterSubscriberController::class, 'store'])->name('newsletter.store');
 Route::get('/track-order', [OrderTrackingController::class, 'index'])->name('track-order');
 Route::get('/api/search', [ProductController::class, 'search'])->name('api.search');
+Route::get('/api/search/popular', [ProductController::class, 'popularSearches'])->name('api.search.popular');
 
 // Auth-required routes
 Route::middleware(['auth', 'verified'])->group(function () {
@@ -53,15 +55,19 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Wishlist
     Route::get('/wishlist', [WishlistController::class, 'index'])->name('wishlist.index');
     Route::post('/wishlist', [WishlistController::class, 'toggle'])->name('wishlist.toggle');
+    Route::post('/wishlist/move-to-cart', [WishlistController::class, 'moveAllToCart'])->name('wishlist.move-to-cart');
     Route::delete('/wishlist/{wishlist}', [WishlistController::class, 'destroy'])->name('wishlist.destroy');
 
     // Checkout
     Route::get('/checkout', [CheckoutController::class, 'index'])->name('checkout.index');
-    Route::post('/checkout/coupon', [CheckoutController::class, 'applyCoupon'])->name('checkout.coupon');
+    Route::post('/checkout/coupon', [CheckoutController::class, 'applyCoupon'])->name('checkout.coupon.apply');
+    Route::delete('/checkout/coupon', [CheckoutController::class, 'removeCoupon'])->name('checkout.coupon.remove');
     Route::post('/checkout', [CheckoutController::class, 'store'])->name('checkout.store');
 
     // Reviews
     Route::post('/products/{product}/review', [ProductController::class, 'submitReview'])->name('products.review');
+    Route::post('/products/{product}/price-alert', [PriceAlertController::class, 'store'])->name('price-alerts.store');
+    Route::delete('/products/{product}/price-alert', [PriceAlertController::class, 'destroy'])->name('price-alerts.destroy');
 
     // Account
     Route::prefix('account')->name('account.')->group(function () {
@@ -69,6 +75,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/orders', [AccountController::class, 'orders'])->name('orders');
         Route::get('/orders/{order}', [AccountController::class, 'orderShow'])->name('orders.show');
         Route::get('/orders/{order}/invoice', [AccountController::class, 'downloadInvoice'])->name('orders.invoice');
+        Route::post('/orders/{order}/repeat', [AccountController::class, 'repeatOrder'])->name('orders.repeat');
+        Route::patch('/orders/{order}/cancel', [AccountController::class, 'cancelOrder'])->name('orders.cancel');
         Route::get('/addresses', [AccountController::class, 'addresses'])->name('addresses');
         Route::get('/profile', [AccountController::class, 'profile'])->name('profile');
         Route::put('/profile', [AccountController::class, 'updateProfile'])->name('profile.update');

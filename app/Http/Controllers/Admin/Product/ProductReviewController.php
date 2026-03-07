@@ -3,37 +3,46 @@
 namespace App\Http\Controllers\Admin\Product;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\ProductReviewIndexRequest;
 use App\Models\ProductReview;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class ProductReviewController extends Controller
 {
-    public function index(Request $request): Response
+    public function index(ProductReviewIndexRequest $request): Response
     {
+        $filters = $request->validated();
+
         $query = ProductReview::with(['product:id,name,thumb_image', 'user:id,name,email']);
 
-        if ($request->filled('status')) {
-            $query->where('status', $request->status);
+        if (isset($filters['status']) && $filters['status'] !== '') {
+            $query->where('status', $filters['status']);
         }
 
-        if ($request->filled('rating')) {
-            $query->where('rating', $request->rating);
+        if (isset($filters['rating']) && $filters['rating'] !== '') {
+            $query->where('rating', $filters['rating']);
+        }
+
+        if (isset($filters['verified_purchase']) && $filters['verified_purchase'] !== '') {
+            $query->where('verified_purchase', $filters['verified_purchase']);
         }
 
         $reviews = $query->latest()->paginate(15)->withQueryString();
 
         return Inertia::render('admin/review/index', [
             'reviews' => $reviews,
-            'filters' => $request->only(['status', 'rating']),
+            'filters' => collect($filters)
+                ->only(['status', 'rating', 'verified_purchase'])
+                ->filter(fn ($value) => $value !== null && $value !== '')
+                ->all(),
         ]);
     }
 
     public function toggleStatus(ProductReview $review): RedirectResponse
     {
-        $review->update(['status' => !$review->status]);
+        $review->update(['status' => ! $review->status]);
 
         return redirect()->back();
     }

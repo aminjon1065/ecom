@@ -3,10 +3,18 @@
 namespace App\Http\Controllers\Client;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Client\ProductIndexRequest;
+use App\Http\Requests\Client\SubmitProductReviewRequest;
 use App\Models\Brand;
 use App\Models\Category;
+use App\Models\Order;
+use App\Models\PopularSearchQuery;
+use App\Models\PriceAlert;
 use App\Models\Product;
 use App\Models\ProductReview;
+use App\Models\ProductViewEvent;
+use App\Services\Product\ProductFilter;
+use App\Services\Product\RecommendationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -16,87 +24,22 @@ use Inertia\Response;
 
 class ProductController extends Controller
 {
-    public function index(Request $request): Response
+    public function __construct(
+        private readonly ProductFilter $productFilter,
+        private readonly RecommendationService $recommendationService,
+    ) {}
+
+    public function index(ProductIndexRequest $request): Response
     {
+        $filters = $request->validated();
+
         $query = Product::where('status', true)
             ->where('is_approved', true)
             ->with(['category:id,name', 'brand:id,name'])
             ->withAvg('reviews', 'rating')
             ->withCount('reviews');
 
-        if ($search = $request->input('search')) {
-            $bigrams = $this->getBigrams($search);
-            $words = array_filter(explode(' ', trim($search)));
-
-            $query->where(function ($q) use ($search, $words, $bigrams) {
-                // Exact substring match
-                $q->where('name', 'like', "%{$search}%")
-                    ->orWhere('short_description', 'like', "%{$search}%")
-                    ->orWhere('code', 'like', "%{$search}%");
-
-                // Multi-word: each word matches somewhere
-                if (count($words) > 1) {
-                    $q->orWhere(function ($sub) use ($words) {
-                        foreach ($words as $word) {
-                            $sub->where(function ($inner) use ($word) {
-                                $inner->where('name', 'like', "%{$word}%")
-                                    ->orWhere('short_description', 'like', "%{$word}%");
-                            });
-                        }
-                    });
-                }
-
-                // Fuzzy bigram matching: at least 50% of bigrams match
-                if (! empty($bigrams)) {
-                    $minMatches = max(1, (int) ceil(count($bigrams) * 0.5));
-                    $conditions = [];
-                    $bindings = [];
-                    foreach ($bigrams as $bigram) {
-                        $conditions[] = '(LOWER(name) LIKE ?)';
-                        $bindings[] = '%'.mb_strtolower($bigram).'%';
-                    }
-
-                    $q->orWhereRaw(
-                        '('.implode(' + ', $conditions).') >= ?',
-                        [...$bindings, $minMatches]
-                    );
-                }
-            });
-        }
-
-        if ($categoryId = $request->input('category')) {
-            $query->where('category_id', $categoryId);
-        }
-
-        if ($subCategoryId = $request->input('sub_category')) {
-            $query->where('sub_category_id', $subCategoryId);
-        }
-
-        if ($childCategoryId = $request->input('child_category')) {
-            $query->where('child_category_id', $childCategoryId);
-        }
-
-        if ($brandId = $request->input('brand')) {
-            $query->where('brand_id', $brandId);
-        }
-
-        if ($request->has('min_price') && $request->input('min_price') !== '') {
-            $query->where('price', '>=', $request->input('min_price'));
-        }
-
-        if ($request->has('max_price') && $request->input('max_price') !== '') {
-            $query->where('price', '<=', $request->input('max_price'));
-        }
-
-        $sort = $request->input('sort', 'latest');
-        // Push out-of-stock items to the bottom, then sort by user choice
-        $query->orderByRaw('qty = 0');
-        match ($sort) {
-            'price_asc' => $query->orderBy('price'),
-            'price_desc' => $query->orderByDesc('price'),
-            'popular' => $query->orderByDesc('reviews_count'),
-            default => $query->latest(),
-        };
+        $this->productFilter->apply($query, $filters);
 
         $paginated = $query->paginate(12)->withQueryString();
         $products = $paginated->currentPage() > 1
@@ -122,7 +65,10 @@ class ProductController extends Controller
             ],
             'categories' => $categories,
             'brands' => $brands,
-            'filters' => $request->only(['search', 'category', 'sub_category', 'child_category', 'brand', 'min_price', 'max_price', 'sort']),
+            'filters' => collect($filters)
+                ->only(['search', 'category', 'sub_category', 'child_category', 'brand', 'min_price', 'max_price', 'sort'])
+                ->filter(fn ($value) => $value !== null && $value !== '')
+                ->all(),
         ]);
     }
 
@@ -142,6 +88,13 @@ class ProductController extends Controller
             ->withCount('reviews')
             ->firstOrFail();
 
+        ProductViewEvent::query()->create([
+            'product_id' => $product->id,
+            'user_id' => Auth::id(),
+            'session_id' => session()->getId(),
+            'viewed_at' => now(),
+        ]);
+
         $reviews = ProductReview::where('product_id', $product->id)
             ->where('status', true)
             ->with('user:id,name,avatar')
@@ -149,29 +102,63 @@ class ProductController extends Controller
             ->take(10)
             ->get();
 
-        $relatedProducts = Product::where('category_id', $product->category_id)
-            ->where('id', '!=', $product->id)
-            ->where('status', true)
-            ->where('is_approved', true)
-            ->withAvg('reviews', 'rating')
-            ->withCount('reviews')
-            ->take(4)
-            ->get();
+        $relatedProducts = $this->recommendationService->relatedProducts($product, 4);
+        $alsoBoughtProducts = $this->recommendationService->alsoBoughtProducts($product, 4);
 
+        $isAuthenticated = Auth::check();
+        $canReviewProduct = false;
+        $isPriceAlertActive = false;
         $isInWishlist = false;
         $isInCart = false;
-        if (Auth::check()) {
+
+        if ($isAuthenticated) {
+            $userId = (int) Auth::id();
+
             $isInWishlist = Auth::user()->wishlists()->where('product_id', $product->id)->exists();
             $isInCart = Auth::user()->carts()->where('product_id', $product->id)->exists();
+            $isPriceAlertActive = PriceAlert::query()
+                ->where('user_id', $userId)
+                ->where('product_id', $product->id)
+                ->where('is_active', true)
+                ->exists();
+            $canReviewProduct = Order::query()
+                ->where('user_id', $userId)
+                ->where('order_status', '!=', 'cancelled')
+                ->whereHas('products', function ($query) use ($product): void {
+                    $query->where('product_id', $product->id);
+                })
+                ->exists();
         }
 
         return Inertia::render('client/products/show', [
             'product' => $product,
             'reviews' => $reviews,
             'relatedProducts' => $relatedProducts,
+            'alsoBoughtProducts' => $alsoBoughtProducts,
+            'isAuthenticated' => $isAuthenticated,
+            'canReviewProduct' => $canReviewProduct,
+            'isPriceAlertActive' => $isPriceAlertActive,
             'isInWishlist' => $isInWishlist,
             'isInCart' => $isInCart,
+            'deliveryEstimate' => $this->resolveDeliveryEstimate((int) $product->qty),
         ]);
+    }
+
+    private function resolveDeliveryEstimate(int $qty): ?string
+    {
+        if ($qty <= 0) {
+            return null;
+        }
+
+        if ($qty >= 20) {
+            return 'Доставка завтра';
+        }
+
+        if ($qty >= 5) {
+            return 'Доставка 1-2 дня';
+        }
+
+        return 'Доставка 2-4 дня';
     }
 
     public function search(Request $request): JsonResponse
@@ -184,8 +171,8 @@ class ProductController extends Controller
 
         $query = Product::where('status', true)
             ->where('is_approved', true)
-            ->select(['id', 'name', 'slug', 'thumb_image', 'price', 'offer_price', 'offer_start_date', 'offer_end_date', 'category_id', 'qty'])
-            ->with('category:id,name');
+            ->select(['id', 'name', 'slug', 'thumb_image', 'price', 'offer_price', 'offer_start_date', 'offer_end_date', 'category_id', 'brand_id', 'qty'])
+            ->with(['category:id,name', 'brand:id,name']);
 
         // Generate bigrams (2-char chunks) for fuzzy matching
         $bigrams = $this->getBigrams($q);
@@ -245,6 +232,51 @@ class ProductController extends Controller
         return response()->json($products);
     }
 
+    public function popularSearches(): JsonResponse
+    {
+        $manualQueries = PopularSearchQuery::query()
+            ->where('is_active', true)
+            ->orderByDesc('priority')
+            ->orderByDesc('id')
+            ->limit(8)
+            ->pluck('query')
+            ->map(fn (string $query): string => trim($query))
+            ->filter(fn (string $query): bool => $query !== '')
+            ->values();
+
+        if (! $manualQueries->isEmpty()) {
+            return response()->json($manualQueries);
+        }
+
+        $popularQueries = ProductViewEvent::query()
+            ->join('products', 'products.id', '=', 'product_view_events.product_id')
+            ->where('products.status', true)
+            ->where('products.is_approved', true)
+            ->groupBy('products.id', 'products.name')
+            ->select('products.name')
+            ->selectRaw('count(*) as views_count')
+            ->orderByDesc('views_count')
+            ->limit(8)
+            ->pluck('name')
+            ->map(fn (string $name): string => trim($name))
+            ->filter(fn (string $name): bool => $name !== '')
+            ->values();
+
+        if ($popularQueries->isEmpty()) {
+            $popularQueries = Product::query()
+                ->where('status', true)
+                ->where('is_approved', true)
+                ->latest('id')
+                ->limit(8)
+                ->pluck('name')
+                ->map(fn (string $name): string => trim($name))
+                ->filter(fn (string $name): bool => $name !== '')
+                ->values();
+        }
+
+        return response()->json($popularQueries);
+    }
+
     /**
      * Generate bigrams (2-character chunks) from a string for fuzzy matching.
      */
@@ -264,16 +296,18 @@ class ProductController extends Controller
         return array_unique($bigrams);
     }
 
-    public function submitReview(Request $request, Product $product): RedirectResponse
+    public function submitReview(SubmitProductReviewRequest $request, Product $product): RedirectResponse
     {
-        $validated = $request->validate([
-            'rating' => 'required|integer|min:1|max:5',
-            'review' => 'required|string|max:1000',
-        ]);
+        $validated = $request->validated();
 
         ProductReview::updateOrCreate(
             ['user_id' => Auth::id(), 'product_id' => $product->id],
-            ['rating' => $validated['rating'], 'review' => $validated['review'], 'status' => false],
+            [
+                'rating' => $validated['rating'],
+                'review' => $validated['review'],
+                'status' => false,
+                'verified_purchase' => true,
+            ],
         );
 
         return redirect()->back();

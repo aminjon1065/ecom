@@ -15,12 +15,12 @@ export interface Product {
     link_first?: string | null;
     first_source_link?: string | null;
     second_source_link?: string | null;
-    category: {
+    category?: {
         id: number;
         name: string;
-    };
-    brand: {
+    } | null;
+    brand?: {
         id: number;
         name: string;
-    };
+    } | null;
 }

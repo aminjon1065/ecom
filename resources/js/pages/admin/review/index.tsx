@@ -1,5 +1,6 @@
 import { Column, DataTable } from '@/components/datatable';
 import { Pagination } from '@/components/pagination';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
@@ -17,6 +18,7 @@ interface Review {
     review: string;
     rating: number;
     status: boolean;
+    verified_purchase: boolean;
     created_at: string;
     product: { id: number; name: string; thumb_image: string };
     user: { id: number; name: string; email: string };
@@ -29,19 +31,21 @@ const breadcrumbs: BreadcrumbItem[] = [
 
 interface Props {
     reviews: PaginatedResponse<Review>;
-    filters: { status?: string; rating?: string };
+    filters: { status?: string; rating?: string; verified_purchase?: string };
 }
 
 export default function ReviewIndex({ reviews, filters: initialFilters }: Props) {
     const [filters, setFilters] = useState({
         status: initialFilters.status ?? 'all',
         rating: initialFilters.rating ?? 'all',
+        verified_purchase: initialFilters.verified_purchase ?? 'all',
     });
 
     function applyFilters() {
         router.get('/admin/review', {
             status: filters.status === 'all' ? undefined : filters.status,
             rating: filters.rating === 'all' ? undefined : filters.rating,
+            verified_purchase: filters.verified_purchase === 'all' ? undefined : filters.verified_purchase,
             page: 1,
         }, { preserveScroll: true, preserveState: true });
     }
@@ -80,6 +84,14 @@ export default function ReviewIndex({ reviews, filters: initialFilters }: Props)
             render: (row) => <p className="max-w-xs truncate text-sm text-muted-foreground">{row.review}</p>,
         },
         {
+            key: 'verified_purchase', label: 'Покупка',
+            render: (row) => (
+                row.verified_purchase
+                    ? <Badge variant="secondary">Подтверждена</Badge>
+                    : <Badge variant="outline">Нет</Badge>
+            ),
+        },
+        {
             key: 'status', label: 'Статус',
             render: (row) => (
                 <Switch
@@ -113,7 +125,7 @@ export default function ReviewIndex({ reviews, filters: initialFilters }: Props)
             <div className="space-y-4">
                 <h1 className="text-xl font-semibold">Отзывы</h1>
                 <div className="rounded-lg border p-4">
-                    <div className="grid gap-4 md:grid-cols-3">
+                    <div className="grid gap-4 md:grid-cols-4">
                         <Select value={filters.status} onValueChange={(v) => setFilters((f) => ({ ...f, status: v }))}>
                             <SelectTrigger><SelectValue placeholder="Статус" /></SelectTrigger>
                             <SelectContent>
@@ -131,9 +143,17 @@ export default function ReviewIndex({ reviews, filters: initialFilters }: Props)
                                 ))}
                             </SelectContent>
                         </Select>
+                        <Select value={filters.verified_purchase} onValueChange={(v) => setFilters((f) => ({ ...f, verified_purchase: v }))}>
+                            <SelectTrigger><SelectValue placeholder="Покупка" /></SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="all">Все</SelectItem>
+                                <SelectItem value="1">Подтверждена</SelectItem>
+                                <SelectItem value="0">Не подтверждена</SelectItem>
+                            </SelectContent>
+                        </Select>
                         <div className="flex gap-2">
                             <Button onClick={applyFilters}>Применить</Button>
-                            <Button variant="outline" onClick={() => { setFilters({ status: 'all', rating: 'all' }); router.get('/admin/review'); }}>Сбросить</Button>
+                            <Button variant="outline" onClick={() => { setFilters({ status: 'all', rating: 'all', verified_purchase: 'all' }); router.get('/admin/review'); }}>Сбросить</Button>
                         </div>
                     </div>
                 </div>

@@ -1,10 +1,13 @@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import GetStatusBadge from '@/helper/getStatusBadge';
 import AppAccountLayout from '@/layouts/app/client/account/app-account-layout';
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, router } from '@inertiajs/react';
 import { CheckCircle, Clock, Package, Wallet } from 'lucide-react';
+import { useState } from 'react';
 
 interface Order {
     id: number;
@@ -31,8 +34,62 @@ interface Props {
         totalSpent: number;
     };
     recentOrders: Order[];
+    dashboardFilters: {
+        search?: string;
+        status?: string;
+    };
 }
-export default function AccountDashboard({ stats, recentOrders }: Props) {
+
+const QUICK_STATUSES = [
+    { value: 'all', label: 'Все' },
+    { value: 'pending', label: 'Ожидают' },
+    { value: 'processing', label: 'В обработке' },
+    { value: 'delivered', label: 'Доставлены' },
+    { value: 'cancelled', label: 'Отменённые' },
+] as const;
+
+export default function AccountDashboard({ stats, recentOrders, dashboardFilters }: Props) {
+    const [filters, setFilters] = useState({
+        search: dashboardFilters.search ?? '',
+        status: dashboardFilters.status ?? 'all',
+    });
+
+    function applyFilters(): void {
+        router.get(
+            '/account',
+            {
+                search: filters.search || undefined,
+                status: filters.status === 'all' ? undefined : filters.status,
+            },
+            { preserveScroll: true, preserveState: true },
+        );
+    }
+
+    function resetFilters(): void {
+        setFilters({
+            search: '',
+            status: 'all',
+        });
+
+        router.get('/account', {}, { preserveScroll: true });
+    }
+
+    function setQuickStatus(status: string): void {
+        setFilters((current) => ({ ...current, status }));
+        router.get(
+            '/account',
+            {
+                search: filters.search || undefined,
+                status: status === 'all' ? undefined : status,
+            },
+            { preserveScroll: true, preserveState: true },
+        );
+    }
+
+    function canCancel(orderStatus: string): boolean {
+        return orderStatus === 'pending' || orderStatus === 'processing';
+    }
+
     return (
         <AppAccountLayout activePath={'/account'} title={'Личный кабинет'}>
             <Head title="Личный кабинет" />
@@ -101,88 +158,127 @@ export default function AccountDashboard({ stats, recentOrders }: Props) {
                     <CardTitle>Последние заказы</CardTitle>
                 </CardHeader>
                 <CardContent>
+                    <div className="mb-4 rounded-lg border p-4">
+                        <div className="grid gap-3 md:grid-cols-4">
+                            <Input
+                                placeholder="Поиск по номеру"
+                                value={filters.search}
+                                onChange={(event) =>
+                                    setFilters((current) => ({
+                                        ...current,
+                                        search: event.target.value,
+                                    }))
+                                }
+                                onKeyDown={(event) => {
+                                    if (event.key === 'Enter') {
+                                        applyFilters();
+                                    }
+                                }}
+                            />
+                            <Select
+                                value={filters.status}
+                                onValueChange={(value) =>
+                                    setFilters((current) => ({
+                                        ...current,
+                                        status: value,
+                                    }))
+                                }
+                            >
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Все статусы" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">Все статусы</SelectItem>
+                                    <SelectItem value="pending">В обработке</SelectItem>
+                                    <SelectItem value="processing">Обрабатывается</SelectItem>
+                                    <SelectItem value="shipped">Отправлен</SelectItem>
+                                    <SelectItem value="delivered">Доставлен</SelectItem>
+                                    <SelectItem value="cancelled">Отменён</SelectItem>
+                                </SelectContent>
+                            </Select>
+                            <Button onClick={applyFilters}>Применить</Button>
+                            <Button variant="outline" onClick={resetFilters}>
+                                Сбросить
+                            </Button>
+                        </div>
+                        <div className="mt-3 flex flex-wrap gap-2">
+                            {QUICK_STATUSES.map((status) => (
+                                <Button
+                                    key={status.value}
+                                    variant={filters.status === status.value ? 'default' : 'outline'}
+                                    size="sm"
+                                    onClick={() => setQuickStatus(status.value)}
+                                >
+                                    {status.label}
+                                </Button>
+                            ))}
+                        </div>
+                    </div>
+
                     {recentOrders.length > 0 ? (
                         <div className="space-y-4">
-                            <div className="overflow-x-auto">
-                                <table className="w-full">
-                                    <thead>
-                                        <tr className="border-b">
-                                            <th className="px-2 py-3 text-left">
-                                                Номер
-                                            </th>
-                                            <th className="px-2 py-3 text-left">
-                                                Сумма
-                                            </th>
-                                            <th className="px-2 py-3 text-left">
-                                                Статус
-                                            </th>
-                                            <th className="px-2 py-3 text-left">
-                                                Оплата
-                                            </th>
-                                            <th className="px-2 py-3 text-left">
-                                                Дата
-                                            </th>
-                                            <th className="px-2 py-3 text-right">
-                                                Действия
-                                            </th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {recentOrders.map((order) => (
-                                            <tr
-                                                key={order.id}
-                                                className="border-b hover:bg-muted/50"
+                            <div className="text-sm text-muted-foreground">
+                                Показано заказов: {recentOrders.length}
+                            </div>
+                            <div className="space-y-3">
+                                {recentOrders.map((order) => (
+                                    <div
+                                        key={order.id}
+                                        className="rounded-lg border p-4"
+                                    >
+                                        <div className="flex flex-wrap items-start justify-between gap-3">
+                                            <div>
+                                                <p className="font-semibold">
+                                                    Заказ #{order.invoice_id}
+                                                </p>
+                                                <p className="text-sm text-muted-foreground">
+                                                    {new Date(order.created_at).toLocaleDateString('ru-RU')}
+                                                </p>
+                                            </div>
+                                            <div className="text-right">
+                                                <p className="text-lg font-bold">
+                                                    {order.amount.toLocaleString()} сом
+                                                </p>
+                                                <Badge
+                                                    variant={order.payment_status ? 'default' : 'secondary'}
+                                                    className="mt-1"
+                                                >
+                                                    {order.payment_status ? 'Оплачен' : 'Не оплачен'}
+                                                </Badge>
+                                            </div>
+                                        </div>
+                                        <div className="mt-3 flex flex-wrap items-center gap-2">
+                                            <GetStatusBadge order_status={order.order_status} />
+                                            <span className="text-xs text-muted-foreground">
+                                                Товаров: {order.products.length}
+                                            </span>
+                                        </div>
+                                        <div className="mt-4 flex flex-wrap gap-2">
+                                            {canCancel(order.order_status) && (
+                                                <Button
+                                                    variant="destructive"
+                                                    size="sm"
+                                                    onClick={() => router.patch(`/account/orders/${order.id}/cancel`)}
+                                                >
+                                                    Отменить
+                                                </Button>
+                                            )}
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
+                                                onClick={() => router.post(`/account/orders/${order.id}/repeat`)}
                                             >
-                                                <td className="px-2 py-3 font-medium">
-                                                    #{order.invoice_id}
-                                                </td>
-                                                <td className="px-2 py-3">
-                                                    {order.amount.toLocaleString()}{' '}
-                                                    сом
-                                                </td>
-                                                <td className="px-2 py-3">
-                                                    <GetStatusBadge
-                                                        order_status={
-                                                            order.order_status
-                                                        }
-                                                    />
-                                                </td>
-                                                <td className="px-2 py-3">
-                                                    <Badge
-                                                        variant={
-                                                            order.payment_status
-                                                                ? 'default'
-                                                                : 'secondary'
-                                                        }
-                                                    >
-                                                        {order.payment_status
-                                                            ? 'Оплачен'
-                                                            : 'Не оплачен'}
-                                                    </Badge>
-                                                </td>
-                                                <td className="px-2 py-3 text-sm text-muted-foreground">
-                                                    {new Date(
-                                                        order.created_at,
-                                                    ).toLocaleDateString(
-                                                        'ru-RU',
-                                                    )}
-                                                </td>
-                                                <td className="px-2 py-3 text-right">
-                                                    <Link
-                                                        href={`/account/orders/${order.id}`}
-                                                    >
-                                                        <Button
-                                                            variant="ghost"
-                                                            size="sm"
-                                                        >
-                                                            Подробнее
-                                                        </Button>
-                                                    </Link>
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
+                                                Повторить
+                                            </Button>
+                                            <Button asChild variant="outline" size="sm">
+                                                <a href={`/account/orders/${order.id}/invoice`}>Чек</a>
+                                            </Button>
+                                            <Button asChild variant="ghost" size="sm">
+                                                <Link href={`/account/orders/${order.id}`}>Подробнее</Link>
+                                            </Button>
+                                        </div>
+                                    </div>
+                                ))}
                             </div>
 
                             <div className="flex justify-end">

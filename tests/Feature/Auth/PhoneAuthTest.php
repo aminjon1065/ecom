@@ -1,63 +1,109 @@
 <?php
 
+use App\Models\PhoneOtp;
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
+use Spatie\Permission\Models\Role;
+use Spatie\Permission\PermissionRegistrar;
 
 test('phone login screen can be rendered', function () {
-    $response = $this->get(route('auth.phone.login'));
+    $this->withoutVite();
+
+    $response = $this->get(route('auth.phone'));
+
     $response->assertStatus(200);
 });
 
-test('can send verification code to valid phone', function () {
-    $response = $this->post(route('auth.phone.store'), [
-        'phone' => '+992927777777',
+test('can send otp to valid phone', function () {
+    $phone = '+992927777777';
+
+    $response = $this->post(route('auth.phone.otp'), [
+        'phone' => $phone,
     ]);
 
-    $response->assertRedirect(route('auth.phone.verify', ['phone' => '+992927777777']));
+    $response->assertRedirect();
 
-    $user = User::where('phone', '+992927777777')->first();
-    expect($user)->not->toBeNull();
-    expect($user->verification_code)->toBe('123456'); // Mock code
+    $otp = PhoneOtp::query()->where('phone', $phone)->first();
+    expect($otp)->not->toBeNull();
+    expect($otp?->otp)->toHaveLength(6);
 });
 
-test('cannot verify with invalid code', function () {
-    $user = User::factory()->create([
-        'phone' => '+992928888888',
-        'verification_code' => '123456',
+test('cannot verify with invalid otp', function () {
+    $phone = '+992928888888';
+
+    PhoneOtp::create([
+        'phone' => $phone,
+        'otp' => '123456',
+        'expires_at' => now()->addMinutes(5),
     ]);
 
-    $response = $this->post(route('auth.phone.confirm'), [
-        'phone' => '+992928888888',
-        'code' => '000000',
+    $response = $this->post(route('auth.phone.verify'), [
+        'phone' => $phone,
+        'otp' => '000000',
     ]);
 
-    $response->assertSessionHasErrors(['code']);
+    $response->assertSessionHasErrors(['otp']);
     $this->assertGuest();
 });
 
-test('can verify and login with valid code', function () {
-    $user = User::factory()->create([
-        'phone' => '+992929999999',
-        'verification_code' => '123456',
+test('can verify and login with valid otp', function () {
+    app(PermissionRegistrar::class)->forgetCachedPermissions();
+    Role::query()->firstOrCreate([
+        'name' => 'user',
+        'guard_name' => 'web',
     ]);
 
-    $response = $this->post(route('auth.phone.confirm'), [
-        'phone' => '+992929999999',
-        'code' => '123456',
+    $phone = '+992929999999';
+
+    PhoneOtp::create([
+        'phone' => $phone,
+        'otp' => '123456',
+        'expires_at' => now()->addMinutes(5),
+    ]);
+
+    $response = $this->post(route('auth.phone.verify'), [
+        'phone' => $phone,
+        'otp' => '123456',
     ]);
 
     $response->assertRedirect('/');
+
+    $user = User::query()->where('phone', $phone)->first();
+    expect($user)->not->toBeNull();
     $this->assertAuthenticatedAs($user);
-    
-    $user->refresh();
-    expect($user->verification_code)->toBeNull();
-    expect($user->phone_verified_at)->not->toBeNull();
+    expect($user?->phone_verified_at)->not->toBeNull();
+    expect(PhoneOtp::query()->where('phone', $phone)->exists())->toBeFalse();
 });
 
 test('validation fails for invalid phone format', function () {
-    $response = $this->post(route('auth.phone.store'), [
+    $response = $this->post(route('auth.phone.otp'), [
         'phone' => '12345',
     ]);
 
     $response->assertSessionHasErrors(['phone']);
+});
+
+test('new phone user gets random password hash', function () {
+    app(PermissionRegistrar::class)->forgetCachedPermissions();
+    Role::query()->firstOrCreate([
+        'name' => 'user',
+        'guard_name' => 'web',
+    ]);
+
+    $phone = '+992926666666';
+
+    PhoneOtp::create([
+        'phone' => $phone,
+        'otp' => '654321',
+        'expires_at' => now()->addMinutes(5),
+    ]);
+
+    $this->post(route('auth.phone.verify'), [
+        'phone' => $phone,
+        'otp' => '654321',
+    ])->assertRedirect('/');
+
+    $user = User::query()->where('phone', $phone)->firstOrFail();
+
+    expect(Hash::check('password', $user->password))->toBeFalse();
 });

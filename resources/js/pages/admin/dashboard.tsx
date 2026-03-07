@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { DataTable, type Column } from '@/components/datatable';
 import { Switch } from '@/components/ui/switch';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
     DollarSign,
     ShoppingCart,
@@ -22,6 +23,7 @@ import {
     Clock,
     Activity,
 } from 'lucide-react';
+import { useState } from 'react';
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -67,7 +69,12 @@ export default function Dashboard({
     pendingReviews,
     vendorProducts,
     vendorProductStats,
+    metricsPeriod,
+    funnelMetrics,
+    topProducts,
 }: DashboardProps) {
+    const [selectedPeriod, setSelectedPeriod] = useState(metricsPeriod ?? '30');
+
     const revenueTrend = statistics.yesterday_revenue > 0
         ? ((statistics.today_revenue - statistics.yesterday_revenue) / statistics.yesterday_revenue) * 100
         : statistics.today_revenue > 0 ? 100 : 0;
@@ -452,6 +459,91 @@ export default function Dashboard({
                         </CardContent>
                     </Card>
                 )}
+
+                <div className="grid gap-4 lg:grid-cols-2">
+                    <Card>
+                        <CardHeader>
+                            <div className="flex items-center justify-between gap-3">
+                                <CardTitle>Воронка Conversion</CardTitle>
+                                <Select
+                                    value={selectedPeriod}
+                                    onValueChange={(value) => {
+                                        setSelectedPeriod(value);
+                                        router.get('/admin/dashboard', { period: value }, { preserveScroll: true, preserveState: true });
+                                    }}
+                                >
+                                    <SelectTrigger className="w-[150px]">
+                                        <SelectValue placeholder="Период" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="7">Последние 7 дней</SelectItem>
+                                        <SelectItem value="30">Последние 30 дней</SelectItem>
+                                        <SelectItem value="90">Последние 90 дней</SelectItem>
+                                        <SelectItem value="all">За всё время</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="grid gap-3 sm:grid-cols-3">
+                                <div className="rounded-lg border p-3">
+                                    <p className="text-sm text-muted-foreground">View → Cart</p>
+                                    <p className="text-xl font-bold">{funnelMetrics.view_to_cart.toFixed(2)}%</p>
+                                    <p className="text-xs text-muted-foreground">
+                                        {funnelMetrics.viewers} → {funnelMetrics.cart_users}
+                                    </p>
+                                </div>
+                                <div className="rounded-lg border p-3">
+                                    <p className="text-sm text-muted-foreground">Cart → Order</p>
+                                    <p className="text-xl font-bold">{funnelMetrics.cart_to_order.toFixed(2)}%</p>
+                                    <p className="text-xs text-muted-foreground">
+                                        {funnelMetrics.cart_users} → {funnelMetrics.buyers}
+                                    </p>
+                                </div>
+                                <div className="rounded-lg border p-3">
+                                    <p className="text-sm text-muted-foreground">View → Order</p>
+                                    <p className="text-xl font-bold">{funnelMetrics.view_to_order.toFixed(2)}%</p>
+                                    <p className="text-xs text-muted-foreground">
+                                        {funnelMetrics.viewers} → {funnelMetrics.buyers}
+                                    </p>
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Top Products</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            {topProducts.length > 0 ? (
+                                <div className="space-y-3">
+                                    {topProducts.map((item) => (
+                                        <div key={item.id} className="flex items-center justify-between gap-3 rounded-lg border p-3">
+                                            <div className="flex items-center gap-3">
+                                                <img
+                                                    src={item.thumb_image}
+                                                    alt={item.name}
+                                                    className="h-10 w-10 rounded object-cover"
+                                                />
+                                                <div>
+                                                    <p className="line-clamp-1 text-sm font-medium">{item.name}</p>
+                                                    <p className="text-xs text-muted-foreground">{item.orders_count} заказов</p>
+                                                </div>
+                                            </div>
+                                            <div className="text-right">
+                                                <p className="text-sm font-semibold">{item.sold_qty} шт.</p>
+                                                <p className="text-xs text-muted-foreground">{formatCurrency(item.gross_revenue)} сом.</p>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <p className="text-sm text-muted-foreground">Недостаточно данных для топа.</p>
+                            )}
+                        </CardContent>
+                    </Card>
+                </div>
 
                 {/* Vendor Products Section */}
                 <Card>

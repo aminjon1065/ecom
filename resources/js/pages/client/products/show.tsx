@@ -7,8 +7,18 @@ import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
 import AppHeaderLayout from '@/layouts/app/client/app-header-layout';
 import { lexicalDescriptionToHtml } from '@/lib/lexical-description';
+import { login } from '@/routes';
 import { Head, Link, router } from '@inertiajs/react';
-import { ChevronRight, Heart, ShoppingCart, Star } from 'lucide-react';
+import {
+    BadgeCheck,
+    ChevronRight,
+    Heart,
+    RotateCcw,
+    ShieldCheck,
+    ShoppingCart,
+    Star,
+    Truck,
+} from 'lucide-react';
 import { useMemo, useState } from 'react';
 
 interface Product {
@@ -43,6 +53,7 @@ interface Review {
     id: number;
     rating: number;
     review: string;
+    verified_purchase: boolean;
     created_at: string;
     user: { id: number; name: string; avatar?: string | null };
 }
@@ -51,16 +62,26 @@ interface Props {
     product: Product;
     reviews: Review[];
     relatedProducts: Product[];
+    alsoBoughtProducts: Product[];
+    isAuthenticated: boolean;
+    canReviewProduct: boolean;
+    isPriceAlertActive: boolean;
     isInWishlist: boolean;
     isInCart: boolean;
+    deliveryEstimate: string | null;
 }
 
 export default function ProductShow({
     product,
     reviews,
     relatedProducts,
+    alsoBoughtProducts,
+    isAuthenticated,
+    canReviewProduct,
+    isPriceAlertActive,
     isInWishlist,
     isInCart,
+    deliveryEstimate,
 }: Props) {
     const imgPrefix = (path: string) =>
         path.startsWith('http') ? path : `/storage/${path}`;
@@ -74,6 +95,9 @@ export default function ProductShow({
     const [reviewRating, setReviewRating] = useState(0);
     const [reviewText, setReviewText] = useState('');
     const [hoveredStar, setHoveredStar] = useState(0);
+    const [isCartUpdating, setIsCartUpdating] = useState(false);
+    const [isWishlistUpdating, setIsWishlistUpdating] = useState(false);
+    const [isPriceAlertUpdating, setIsPriceAlertUpdating] = useState(false);
     const productDescriptionHtml = useMemo(
         () => lexicalDescriptionToHtml(product.long_description),
         [product.long_description],
@@ -108,18 +132,54 @@ export default function ProductShow({
         isOfferActive() &&
         product.offer_price &&
         product.offer_price < product.price;
+    const stockState =
+        product.qty <= 0
+            ? {
+                  label: 'Нет в наличии',
+                  hint: 'Товар временно недоступен.',
+                  className: 'border-red-200 text-red-700',
+              }
+            : product.qty <= 5
+              ? {
+                    label: `Заканчивается (${product.qty} шт.)`,
+                    hint: 'Успейте оформить заказ, остаток ограничен.',
+                    className: 'border-amber-200 text-amber-700',
+                }
+              : {
+                    label: `В наличии (${product.qty} шт.)`,
+                    hint: 'Обычно отправляем в день заказа.',
+                    className: 'border-green-200 text-green-700',
+                };
 
     const handleAddToCart = () => {
-        router.post('/cart', {
-            product_id: product.id,
-            quantity: quantity,
-        });
+        router.post(
+            '/cart',
+            {
+                product_id: product.id,
+                quantity: quantity,
+            },
+            {
+                preserveScroll: true,
+                preserveState: true,
+                onStart: () => setIsCartUpdating(true),
+                onFinish: () => setIsCartUpdating(false),
+            },
+        );
     };
 
     const handleToggleWishlist = () => {
-        router.post('/wishlist', {
-            product_id: product.id,
-        });
+        router.post(
+            '/wishlist',
+            {
+                product_id: product.id,
+            },
+            {
+                preserveScroll: true,
+                preserveState: true,
+                onStart: () => setIsWishlistUpdating(true),
+                onFinish: () => setIsWishlistUpdating(false),
+            },
+        );
     };
 
     const handleSubmitReview = (e: React.FormEvent) => {
@@ -176,7 +236,7 @@ export default function ProductShow({
         <AppHeaderLayout>
             <Head title={product.name} />
 
-            <div className="container mx-auto px-4 py-6">
+            <div className="container mx-auto px-4 py-6 pb-24 lg:pb-6">
                 {/* Breadcrumb */}
                 <nav className="mb-6 flex items-center gap-2 text-sm text-gray-600">
                     <Link href="/" className="hover:text-gray-900">
@@ -236,7 +296,7 @@ export default function ProductShow({
                     </div>
 
                     {/* Product Info */}
-                    <div className="space-y-6">
+                    <div className="space-y-6 lg:sticky lg:top-24 lg:self-start">
                         <div>
                             <h1 className="mb-2 text-3xl font-bold">
                                 {product.name}
@@ -289,6 +349,70 @@ export default function ProductShow({
 
                         <Separator />
 
+                        <div className="grid gap-3 sm:grid-cols-2">
+                            <div className="rounded-lg border p-3">
+                                <p className="text-xs uppercase tracking-wide text-muted-foreground">
+                                    Статус наличия
+                                </p>
+                                <Badge
+                                    variant="outline"
+                                    className={`mt-2 ${stockState.className}`}
+                                >
+                                    {stockState.label}
+                                </Badge>
+                                <p className="mt-2 text-xs text-muted-foreground">
+                                    {stockState.hint}
+                                </p>
+                            </div>
+                            <div className="rounded-lg border p-3">
+                                <p className="text-xs uppercase tracking-wide text-muted-foreground">
+                                    Доставка
+                                </p>
+                                <p className="mt-2 text-sm font-semibold">
+                                    {deliveryEstimate ?? 'Недоступна'}
+                                </p>
+                                <p className="mt-2 text-xs text-muted-foreground">
+                                    {deliveryEstimate
+                                        ? 'Точная дата зависит от адреса и способа доставки.'
+                                        : 'Сообщим о поступлении товара после пополнения склада.'}
+                                </p>
+                            </div>
+                        </div>
+
+                        <Separator />
+
+                        <div className="grid gap-2 sm:grid-cols-3">
+                            <div className="rounded-lg border p-3">
+                                <div className="flex items-center gap-2 text-sm font-medium">
+                                    <ShieldCheck className="h-4 w-4 text-primary" />
+                                    Безопасная оплата
+                                </div>
+                                <p className="mt-1 text-xs text-muted-foreground">
+                                    Защищённые платежи и проверка заказа перед отправкой.
+                                </p>
+                            </div>
+                            <div className="rounded-lg border p-3">
+                                <div className="flex items-center gap-2 text-sm font-medium">
+                                    <RotateCcw className="h-4 w-4 text-primary" />
+                                    Лёгкий возврат
+                                </div>
+                                <p className="mt-1 text-xs text-muted-foreground">
+                                    14 дней на возврат при сохранении товарного вида.
+                                </p>
+                            </div>
+                            <div className="rounded-lg border p-3">
+                                <div className="flex items-center gap-2 text-sm font-medium">
+                                    <Truck className="h-4 w-4 text-primary" />
+                                    Доставка по стране
+                                </div>
+                                <p className="mt-1 text-xs text-muted-foreground">
+                                    Выбор удобного способа доставки при оформлении.
+                                </p>
+                            </div>
+                        </div>
+
+                        <Separator />
+
                         {/* Product Details */}
                         <div className="space-y-2 text-sm">
                             {product.sku && (
@@ -316,9 +440,7 @@ export default function ProductShow({
                                 <span
                                     className={`font-medium ${product.qty > 0 ? 'text-green-600' : 'text-red-600'}`}
                                 >
-                                    {product.qty > 0
-                                        ? `В наличии (${product.qty} шт.)`
-                                        : 'Нет в наличии'}
+                                    {stockState.label}
                                 </span>
                             </div>
                             {product.vendor && (
@@ -372,7 +494,8 @@ export default function ProductShow({
                                         }
                                         className="w-16 border-0 text-center focus-visible:ring-0"
                                         min={1}
-                                        max={product.qty}
+                                        max={Math.max(1, product.qty)}
+                                        disabled={product.qty === 0}
                                     />
                                     <Button
                                         variant="ghost"
@@ -395,14 +518,18 @@ export default function ProductShow({
                             <div className="flex gap-3">
                                 <Button
                                     onClick={handleAddToCart}
-                                    disabled={product.qty === 0 || isInCart}
+                                    disabled={
+                                        product.qty === 0 || isInCart || isCartUpdating
+                                    }
                                     className="flex-1"
                                     size="lg"
                                 >
                                     <ShoppingCart className="mr-2 h-5 w-5" />
                                     {isInCart
                                         ? 'В корзине'
-                                        : 'Добавить в корзину'}
+                                        : isCartUpdating
+                                          ? 'Добавляем...'
+                                          : 'Добавить в корзину'}
                                 </Button>
                                 <Button
                                     variant={
@@ -410,11 +537,50 @@ export default function ProductShow({
                                     }
                                     size="lg"
                                     onClick={handleToggleWishlist}
+                                    disabled={isWishlistUpdating}
                                 >
                                     <Heart
                                         className={`h-5 w-5 ${isInWishlist ? 'fill-current' : ''}`}
                                     />
                                 </Button>
+                            </div>
+                            {isAuthenticated && (
+                                <Button
+                                    variant="outline"
+                                    onClick={() =>
+                                        isPriceAlertActive
+                                            ? router.delete(
+                                                  `/products/${product.id}/price-alert`,
+                                                  {
+                                                      preserveScroll: true,
+                                                      preserveState: true,
+                                                      onStart: () => setIsPriceAlertUpdating(true),
+                                                      onFinish: () => setIsPriceAlertUpdating(false),
+                                                  },
+                                              )
+                                            : router.post(
+                                                  `/products/${product.id}/price-alert`,
+                                                  {},
+                                                  {
+                                                      preserveScroll: true,
+                                                      preserveState: true,
+                                                      onStart: () => setIsPriceAlertUpdating(true),
+                                                      onFinish: () => setIsPriceAlertUpdating(false),
+                                                  },
+                                              )
+                                    }
+                                    disabled={isPriceAlertUpdating}
+                                >
+                                    {isPriceAlertActive
+                                        ? 'Уведомление включено'
+                                        : 'Сообщить о снижении цены'}
+                                </Button>
+                            )}
+                            <div className="rounded-md border border-green-200 bg-green-50 px-3 py-2 text-xs text-green-700">
+                                <div className="flex items-center gap-1.5">
+                                    <BadgeCheck className="h-3.5 w-3.5" />
+                                    Официальная гарантия и поддержка после покупки.
+                                </div>
                             </div>
                         </div>
 
@@ -431,6 +597,31 @@ export default function ProductShow({
                                 </a>
                             </div>
                         )}
+                    </div>
+                </div>
+
+                <div className="fixed inset-x-0 bottom-0 z-40 border-t bg-background/95 p-3 backdrop-blur lg:hidden">
+                    <div className="container mx-auto flex items-center gap-3 px-0">
+                        <div className="min-w-0 flex-1">
+                            <p className="truncate text-sm text-muted-foreground">
+                                {product.name}
+                            </p>
+                            <p className="text-lg font-bold text-primary">
+                                {currentPrice.toLocaleString()} сом.
+                            </p>
+                        </div>
+                        <Button
+                            onClick={handleAddToCart}
+                            disabled={product.qty === 0 || isInCart || isCartUpdating}
+                            className="min-w-40"
+                        >
+                            <ShoppingCart className="mr-2 h-4 w-4" />
+                            {isInCart
+                                ? 'В корзине'
+                                : isCartUpdating
+                                  ? 'Добавляем...'
+                                  : 'В корзину'}
+                        </Button>
                     </div>
                 </div>
 
@@ -483,44 +674,59 @@ export default function ProductShow({
                                     <h3 className="mb-4 text-xl font-semibold">
                                         Оставить отзыв
                                     </h3>
-                                    <form
-                                        onSubmit={handleSubmitReview}
-                                        className="space-y-4"
-                                    >
-                                        <div>
-                                            <label className="mb-2 block text-sm font-medium">
-                                                Ваша оценка
-                                            </label>
-                                            {renderStars(
-                                                reviewRating,
-                                                true,
-                                                setReviewRating,
+                                    {canReviewProduct ? (
+                                        <form
+                                            onSubmit={handleSubmitReview}
+                                            className="space-y-4"
+                                        >
+                                            <div>
+                                                <label className="mb-2 block text-sm font-medium">
+                                                    Ваша оценка
+                                                </label>
+                                                {renderStars(
+                                                    reviewRating,
+                                                    true,
+                                                    setReviewRating,
+                                                )}
+                                            </div>
+                                            <div>
+                                                <label
+                                                    htmlFor="review"
+                                                    className="mb-2 block text-sm font-medium"
+                                                >
+                                                    Ваш отзыв
+                                                </label>
+                                                <Textarea
+                                                    id="review"
+                                                    value={reviewText}
+                                                    onChange={(e) =>
+                                                        setReviewText(
+                                                            e.target.value,
+                                                        )
+                                                    }
+                                                    placeholder="Поделитесь своим мнением о товаре..."
+                                                    rows={4}
+                                                    required
+                                                />
+                                            </div>
+                                            <Button type="submit">
+                                                Отправить отзыв
+                                            </Button>
+                                        </form>
+                                    ) : (
+                                        <div className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
+                                            {isAuthenticated ? (
+                                                <p>
+                                                    Оставлять отзывы могут только покупатели этого товара. После покупки
+                                                    и доставки вы сможете отправить отзыв.
+                                                </p>
+                                            ) : (
+                                                <p>
+                                                    Чтобы оставить отзыв, <Link href={login()} className="font-medium text-primary hover:underline">войдите в аккаунт</Link> и купите этот товар.
+                                                </p>
                                             )}
                                         </div>
-                                        <div>
-                                            <label
-                                                htmlFor="review"
-                                                className="mb-2 block text-sm font-medium"
-                                            >
-                                                Ваш отзыв
-                                            </label>
-                                            <Textarea
-                                                id="review"
-                                                value={reviewText}
-                                                onChange={(e) =>
-                                                    setReviewText(
-                                                        e.target.value,
-                                                    )
-                                                }
-                                                placeholder="Поделитесь своим мнением о товаре..."
-                                                rows={4}
-                                                required
-                                            />
-                                        </div>
-                                        <Button type="submit">
-                                            Отправить отзыв
-                                        </Button>
-                                    </form>
+                                    )}
                                 </div>
 
                                 <Separator />
@@ -570,13 +776,20 @@ export default function ProductShow({
                                                         </div>
                                                         <div className="flex-1">
                                                             <div className="mb-2 flex items-center justify-between">
-                                                                <h4 className="font-semibold">
-                                                                    {
-                                                                        review
-                                                                            .user
-                                                                            .name
-                                                                    }
-                                                                </h4>
+                                                                <div className="flex items-center gap-2">
+                                                                    <h4 className="font-semibold">
+                                                                        {
+                                                                            review
+                                                                                .user
+                                                                                .name
+                                                                        }
+                                                                    </h4>
+                                                                    {review.verified_purchase && (
+                                                                        <Badge variant="secondary" className="text-xs">
+                                                                            Подтверждённая покупка
+                                                                        </Badge>
+                                                                    )}
+                                                                </div>
                                                                 <span className="text-sm text-gray-600">
                                                                     {new Date(
                                                                         review.created_at,
@@ -614,6 +827,22 @@ export default function ProductShow({
                                 <ProductCard
                                     key={relatedProduct.id}
                                     product={relatedProduct}
+                                />
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                {alsoBoughtProducts.length > 0 && (
+                    <div className="mt-10">
+                        <h2 className="mb-6 text-2xl font-bold">
+                            С этим покупают
+                        </h2>
+                        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+                            {alsoBoughtProducts.map((recommendedProduct) => (
+                                <ProductCard
+                                    key={recommendedProduct.id}
+                                    product={recommendedProduct}
                                 />
                             ))}
                         </div>

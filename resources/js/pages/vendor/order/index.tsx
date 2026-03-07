@@ -26,6 +26,7 @@ interface PaginatedOrders {
     data: Order[];
     current_page: number;
     last_page: number;
+    path: string;
     links: Array<{ url: string | null; label: string; active: boolean }>;
 }
 
@@ -184,7 +185,11 @@ export default function VendorOrders({ orders, filters }: Props) {
                         )}
                         {orders.last_page > 1 && (
                             <div className="mt-4">
-                                <Pagination links={orders.links} />
+                                <Pagination
+                                    currentPage={orders.current_page}
+                                    lastPage={orders.last_page}
+                                    path={orders.path}
+                                />
                             </div>
                         )}
                     </CardContent>

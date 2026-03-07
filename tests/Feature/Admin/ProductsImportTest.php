@@ -164,3 +164,73 @@ it('collects row errors and continues importing subsequent rows', function () {
     expect($import->errors[0]['row'])->toBe(2)
         ->and($import->errors[1]['row'])->toBe(3);
 });
+
+it('updates existing product and clears brand when import row has empty brand', function () {
+    $category = Category::create([
+        'name' => 'Electronics',
+        'slug' => 'electronics-'.Str::lower(Str::random(6)),
+        'status' => true,
+    ]);
+
+    $subCategory = SubCategory::create([
+        'category_id' => $category->id,
+        'name' => 'Speakers',
+        'slug' => 'speakers-'.Str::lower(Str::random(6)),
+        'status' => true,
+    ]);
+
+    $brand = Brand::create([
+        'name' => 'Acme',
+        'slug' => 'acme-'.Str::lower(Str::random(6)),
+        'logo' => 'brands/acme.png',
+        'status' => true,
+        'is_featured' => true,
+    ]);
+
+    Product::create([
+        'name' => 'Portable Speaker',
+        'code' => 7001,
+        'slug' => 'portable-speaker',
+        'thumb_image' => 'products/thumb-old.png',
+        'category_id' => $category->id,
+        'sub_category_id' => $subCategory->id,
+        'brand_id' => $brand->id,
+        'qty' => 1,
+        'short_description' => 'Old short',
+        'long_description' => '{"root":{"children":[],"type":"root","version":1}}',
+        'price' => 10,
+        'status' => true,
+        'is_approved' => true,
+    ]);
+
+    $import = new ProductsImport;
+
+    $import->collection(new Collection([
+        new Collection([
+            'code' => 7001,
+            'name' => 'Portable Speaker Updated',
+            'category' => 'Electronics',
+            'sub_category' => 'Speakers',
+            'brand' => '',
+            'thumb_image' => 'products/thumb-new.png',
+            'qty' => 5,
+            'price' => 149.99,
+            'short_description' => 'Updated short',
+            'long_description' => 'Updated long text',
+            'status' => 'false',
+            'is_approved' => '0',
+        ]),
+    ]));
+
+    expect($import->errors)->toBeEmpty();
+
+    $product = Product::query()->where('code', 7001)->firstOrFail();
+
+    expect($product->name)->toBe('Portable Speaker Updated')
+        ->and($product->thumb_image)->toBe('products/thumb-new.png')
+        ->and($product->qty)->toBe(5)
+        ->and((float) $product->price)->toBe(149.99)
+        ->and($product->brand_id)->toBeNull()
+        ->and($product->status)->toBeFalse()
+        ->and($product->is_approved)->toBeFalse();
+});

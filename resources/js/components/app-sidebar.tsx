@@ -18,6 +18,7 @@ import {
     Download,
     LayoutGrid,
     Menu,
+    Search,
     Send,
     Settings,
     ShoppingCart,
@@ -114,6 +115,11 @@ const mainMenu: NavItem[] = [
             {
                 title: 'Правило доставки',
                 href: shippingRule.index(),
+            },
+            {
+                title: 'Популярные запросы',
+                href: '/admin/popular-searches',
+                icon: Search,
             },
         ],
     },
