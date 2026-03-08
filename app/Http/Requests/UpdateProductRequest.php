@@ -28,6 +28,9 @@ class UpdateProductRequest extends FormRequest
     protected function prepareForValidation(): void
     {
         $this->merge([
+            'code' => $this->code !== null && $this->code !== ''
+                ? (int) $this->code
+                : null,
             'qty' => (int) $this->qty,
             'price' => (float) $this->price,
             'cost_price' => $this->cost_price !== null
@@ -54,7 +57,11 @@ class UpdateProductRequest extends FormRequest
         return [
             // BASIC
             'name' => ['required', 'string', 'max:255'],
-            'code' => ['nullable', 'string', 'max:100'],
+            'code' => [
+                'required',
+                'integer',
+                Rule::unique('products', 'code')->ignore($product->id),
+            ],
             'sku' => ['nullable', 'string', 'max:100'],
             'qty' => ['required', 'integer', 'min:0'],
 
@@ -75,7 +82,7 @@ class UpdateProductRequest extends FormRequest
 
             // DESCRIPTIONS
             'short_description' => ['nullable', 'string', 'max:1000'],
-            'long_description' => ['required', 'json'],
+            'long_description' => ['required', 'string'],
 
             // SEO
             'seo_title' => ['nullable', 'string', 'max:255'],
@@ -89,6 +96,13 @@ class UpdateProductRequest extends FormRequest
             // FLAGS
             'status' => ['boolean'],
             'is_approved' => ['boolean'],
+
+
+
+            //
+            'first_source_link'=>['nullable'],
+            'second_source_link'=>['nullable'],
+            'video_link'=>['nullable'],
 
             // ENUM
             'product_type' => [
