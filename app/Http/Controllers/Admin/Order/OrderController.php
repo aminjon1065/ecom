@@ -2,10 +2,12 @@
 
 namespace App\Http\Controllers\Admin\Order;
 
+use App\Enums\OrderStatus;
 use App\Http\Controllers\Controller;
 use App\Models\Order;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rules\Enum;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -55,17 +57,17 @@ class OrderController extends Controller
     public function updateStatus(Request $request, Order $order): RedirectResponse
     {
         $request->validate([
-            'order_status' => ['required', 'string', 'in:pending,processing,shipped,delivered,cancelled'],
+            'order_status' => ['required', new Enum(OrderStatus::class)],
         ]);
 
-        $order->update(['order_status' => $request->order_status]);
+        $order->update(['order_status' => OrderStatus::from($request->order_status)]);
 
         return redirect()->back();
     }
 
     public function updatePaymentStatus(Order $order): RedirectResponse
     {
-        $order->update(['payment_status' => !$order->payment_status]);
+        $order->update(['payment_status' => ! $order->payment_status]);
 
         return redirect()->back();
     }

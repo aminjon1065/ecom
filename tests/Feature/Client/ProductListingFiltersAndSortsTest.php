@@ -255,7 +255,7 @@ it('keeps filters when paginating products', function () {
     );
 });
 
-it('does not fail product listing search for legacy product type values', function () {
+it('does not fail product listing search for product with null product type', function () {
     $category = createCategory('Legacy category');
     $brand = createBrand('Legacy brand');
 
@@ -265,7 +265,7 @@ it('does not fail product listing search for legacy product type values', functi
         'code' => 1401,
         'category_id' => $category->id,
         'brand_id' => $brand->id,
-        'product_type' => 'new_arrival',
+        'product_type' => null,
     ]);
 
     $response = $this->get(route('products.index', [

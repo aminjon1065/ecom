@@ -7,6 +7,7 @@ use App\Models\Category;
 use App\Models\Wishlist;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Inertia\Middleware;
 
 class HandleInertiaRequests extends Middleware
@@ -54,13 +55,13 @@ class HandleInertiaRequests extends Middleware
                 'appliedCoupon' => $request->session()->get('appliedCoupon'),
             ],
 
-            'sidebarOpen' => !$request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
+            'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
             'cartCount' => $request->user() ? Cart::where('user_id', $request->user()->id)->count() : 0,
             'wishlistCount' => $request->user() ? Wishlist::where('user_id', $request->user()->id)->count() : 0,
-            'categoriesMenu' => fn() => Category::where('status', true)
-                ->with(['subCategories' => fn($q) => $q->where('status', true)
-                    ->with(['childCategory' => fn($q2) => $q2->where('status', true)])])
-                ->get(['id', 'name', 'slug', 'icon']),
+            'categoriesMenu' => fn () => Cache::remember('categories_menu', 3600, fn () => Category::where('status', true)
+                ->with(['subCategories' => fn ($q) => $q->where('status', true)
+                    ->with(['childCategory' => fn ($q2) => $q2->where('status', true)])])
+                ->get(['id', 'name', 'slug', 'icon'])),
         ];
     }
 }

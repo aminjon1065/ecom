@@ -14,6 +14,7 @@ import { dashboard } from '@/routes/admin';
 import { type NavItem } from '@/types';
 import { Link } from '@inertiajs/react';
 import {
+    Activity,
     Box,
     Download,
     LayoutGrid,
@@ -151,6 +152,21 @@ const footerNavItems: NavItem[] = [
         title: 'Рассылки',
         href: subscriber.index(),
         icon: Send,
+    },
+    {
+        title: 'Мониторинг',
+        href: '/admin/audit-log',
+        icon: Activity,
+        children: [
+            {
+                title: 'Журнал действий',
+                href: '/admin/audit-log',
+            },
+            {
+                title: 'Pulse',
+                href: '/pulse',
+            },
+        ],
     },
 ];
 

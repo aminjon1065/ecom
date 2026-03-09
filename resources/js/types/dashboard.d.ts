@@ -124,6 +124,12 @@ export interface TopProduct {
     orders_count: number;
 }
 
+export interface HealthStatus {
+    status: 'ok' | 'degraded';
+    db: boolean;
+    cache: boolean;
+}
+
 export interface DashboardProps {
     statistics: DashboardStatistics;
     orderStats: OrderStats;
@@ -136,4 +142,5 @@ export interface DashboardProps {
     metricsPeriod: string;
     funnelMetrics: FunnelMetrics;
     topProducts: TopProduct[];
+    healthStatus: HealthStatus;
 }

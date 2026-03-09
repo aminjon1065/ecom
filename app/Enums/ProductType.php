@@ -4,10 +4,10 @@ namespace App\Enums;
 
 enum ProductType: string
 {
-    case Top = 'Топ';
-    case Recommended = 'Рекомендуемый';
-    case New = 'Новый';
-    case Best = 'Лучший';
+    case Top = 'top';
+    case Recommended = 'recommended';
+    case New = 'new';
+    case Best = 'best';
 
     /**
      * Return all enum values as a plain array (useful for validation rules).
@@ -24,7 +24,17 @@ enum ProductType: string
     {
         return array_combine(
             array_column(self::cases(), 'value'),
-            array_column(self::cases(), 'value'),
+            array_map(fn (self $case) => $case->label(), self::cases()),
         );
+    }
+
+    public function label(): string
+    {
+        return match ($this) {
+            self::Top => 'Топ',
+            self::Recommended => 'Рекомендуемый',
+            self::New => 'Новый',
+            self::Best => 'Лучший',
+        };
     }
 }

@@ -8,6 +8,7 @@ use App\Models\ChildCategory;
 use App\Models\SubCategory;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Inertia\Inertia;
 use Str;
 
@@ -49,6 +50,7 @@ class ChildCategoryController extends Controller
             ]),
         ]);
     }
+
     public function store(Request $request): RedirectResponse
     {
         $data = $request->validate([
@@ -66,6 +68,7 @@ class ChildCategoryController extends Controller
         $data['status'] = $data['status'] ?? true;
 
         ChildCategory::create($data);
+        Cache::forget('categories_menu');
 
         return redirect()->back();
     }
@@ -80,6 +83,7 @@ class ChildCategoryController extends Controller
         ]);
 
         $childCategory->update($data);
+        Cache::forget('categories_menu');
 
         return redirect()->back();
     }
@@ -87,18 +91,18 @@ class ChildCategoryController extends Controller
     public function toggleStatus(ChildCategory $childCategory): RedirectResponse
     {
         $childCategory->update([
-            'status' => !$childCategory->status,
+            'status' => ! $childCategory->status,
         ]);
+        Cache::forget('categories_menu');
 
         return redirect()->back();
     }
-
 
     public function destroy(ChildCategory $childCategory)
     {
         $childCategory->delete();
+        Cache::forget('categories_menu');
+
         return redirect()->back();
     }
-
-
 }

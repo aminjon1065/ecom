@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Slider;
+use App\Services\ImageService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -12,6 +13,10 @@ use Inertia\Response;
 
 class SliderController extends Controller
 {
+    public function __construct(
+        private readonly ImageService $imageService,
+    ) {}
+
     public function index(): Response
     {
         $sliders = Slider::orderBy('serial')->paginate(15)->withQueryString();
@@ -33,7 +38,7 @@ class SliderController extends Controller
             'status' => ['boolean'],
         ]);
 
-        $data['banner'] = $request->file('banner')->store('sliders', 'public');
+        $data['banner'] = $this->imageService->storeOptimized($request->file('banner'), 'sliders', 1400);
         $data['status'] = $data['status'] ?? true;
 
         Slider::create($data);
@@ -49,13 +54,13 @@ class SliderController extends Controller
             'title' => ['required', 'string', 'max:255'],
             'starting_price' => ['required', 'string', 'max:255'],
             'btn_url' => ['required', 'string', 'max:255'],
-            'serial' => ['required', 'integer', 'unique:sliders,serial,' . $slider->id],
+            'serial' => ['required', 'integer', 'unique:sliders,serial,'.$slider->id],
             'status' => ['boolean'],
         ]);
 
         if ($request->hasFile('banner')) {
             Storage::disk('public')->delete($slider->banner);
-            $data['banner'] = $request->file('banner')->store('sliders', 'public');
+            $data['banner'] = $this->imageService->storeOptimized($request->file('banner'), 'sliders', 1400);
         } else {
             unset($data['banner']);
         }
@@ -67,7 +72,7 @@ class SliderController extends Controller
 
     public function toggleStatus(Slider $slider): RedirectResponse
     {
-        $slider->update(['status' => !$slider->status]);
+        $slider->update(['status' => ! $slider->status]);
 
         return redirect()->back();
     }

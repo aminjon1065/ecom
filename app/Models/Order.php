@@ -2,9 +2,11 @@
 
 namespace App\Models;
 
+use App\Enums\OrderStatus;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
  * @property int $id
@@ -16,7 +18,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property string $payment_method
  * @property bool $payment_status
  * @property string|null $coupon
- * @property string $order_status
+ * @property OrderStatus $order_status
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\OrderProduct> $products
@@ -43,6 +45,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  */
 class Order extends Model
 {
+    use SoftDeletes;
+
     protected $fillable = [
         'invoice_id',
         'transaction_id',
@@ -63,6 +67,7 @@ class Order extends Model
 
     protected $casts = [
         'payment_status' => 'boolean',
+        'order_status' => OrderStatus::class,
         'amount' => 'float',
         'subtotal' => 'float',
         'discount_total' => 'float',

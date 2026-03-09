@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Vendor;
 
+use App\Enums\ProductType;
 use App\Http\Controllers\Controller;
 use App\Models\Brand;
 use App\Models\Category;
@@ -13,6 +14,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rules\Enum;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -79,7 +81,7 @@ class VendorProductController extends Controller
             'video_link' => 'nullable|url|max:500',
             'seo_title' => 'nullable|string|max:255',
             'seo_description' => 'nullable|string|max:500',
-            'product_type' => 'nullable|string|max:50',
+            'product_type' => ['nullable', new Enum(ProductType::class)],
         ]);
 
         $validated['vendor_id'] = $vendor->id;
@@ -133,7 +135,7 @@ class VendorProductController extends Controller
             'video_link' => 'nullable|url|max:500',
             'seo_title' => 'nullable|string|max:255',
             'seo_description' => 'nullable|string|max:500',
-            'product_type' => 'nullable|string|max:50',
+            'product_type' => ['nullable', new Enum(ProductType::class)],
         ]);
 
         if ($request->hasFile('thumb_image')) {

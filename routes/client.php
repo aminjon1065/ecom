@@ -44,7 +44,7 @@ Route::get('/api/search', [ProductController::class, 'search'])->name('api.searc
 Route::get('/api/search/popular', [ProductController::class, 'popularSearches'])->name('api.search.popular');
 
 // Auth-required routes
-Route::middleware(['auth', 'verified'])->group(function () {
+Route::middleware(['auth'])->group(function () {
     // Cart
     Route::get('/cart', [CartController::class, 'index'])->name('cart.index');
     Route::post('/cart', [CartController::class, 'store'])->name('cart.store');
@@ -62,7 +62,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/checkout', [CheckoutController::class, 'index'])->name('checkout.index');
     Route::post('/checkout/coupon', [CheckoutController::class, 'applyCoupon'])->name('checkout.coupon.apply');
     Route::delete('/checkout/coupon', [CheckoutController::class, 'removeCoupon'])->name('checkout.coupon.remove');
-    Route::post('/checkout', [CheckoutController::class, 'store'])->name('checkout.store');
+    Route::post('/checkout', [CheckoutController::class, 'store'])->name('checkout.store')->middleware('throttle:5,1');
 
     // Reviews
     Route::post('/products/{product}/review', [ProductController::class, 'submitReview'])->name('products.review');
@@ -80,6 +80,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/addresses', [AccountController::class, 'addresses'])->name('addresses');
         Route::get('/profile', [AccountController::class, 'profile'])->name('profile');
         Route::put('/profile', [AccountController::class, 'updateProfile'])->name('profile.update');
+        Route::put('/password', [AccountController::class, 'updatePassword'])->name('password.update');
 
         // Address management
         Route::post('/addresses', [UserAddressController::class, 'store'])->name('addresses.store');

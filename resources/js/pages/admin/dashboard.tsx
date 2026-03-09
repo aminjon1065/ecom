@@ -1,7 +1,7 @@
 import AppLayout from '@/layouts/app/admin/app-layout';
 import { dashboard } from '@/routes/admin';
 import { type BreadcrumbItem } from '@/types';
-import { type DashboardProps, type PendingVendor, type PendingProduct, type RecentOrder, type VendorProduct } from '@/types/dashboard';
+import { type DashboardProps, type PendingVendor, type PendingProduct, type RecentOrder, type VendorProduct, type HealthStatus } from '@/types/dashboard';
 import { Head, router } from '@inertiajs/react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -72,6 +72,7 @@ export default function Dashboard({
     metricsPeriod,
     funnelMetrics,
     topProducts,
+    healthStatus,
 }: DashboardProps) {
     const [selectedPeriod, setSelectedPeriod] = useState(metricsPeriod ?? '30');
 
@@ -155,7 +156,7 @@ export default function Dashboard({
             label: 'Фото',
             render: (row) => (
                 <img
-                    src={row.thumb_image}
+                    src={`/storage/${row.thumb_image}`}
                     alt={row.name}
                     className="h-10 w-10 rounded object-cover"
                 />
@@ -256,7 +257,7 @@ export default function Dashboard({
             label: 'Фото',
             render: (row) => (
                 <img
-                    src={row.thumb_image}
+                    src={`/storage/${row.thumb_image}`}
                     alt={row.name}
                     className="h-10 w-10 rounded object-cover"
                 />
@@ -266,7 +267,9 @@ export default function Dashboard({
             key: 'name',
             label: 'Название',
             render: (row) => (
-                <div className="max-w-[200px] truncate font-medium">{row.name}</div>
+                <div className="max-w-[200px] truncate font-medium">
+                    {row.name}
+                </div>
             ),
         },
         {
@@ -300,7 +303,11 @@ export default function Dashboard({
                 <Switch
                     checked={row.is_approved}
                     onCheckedChange={() => {
-                        router.patch(`/admin/seller-products/${row.id}/approval`, {}, { preserveScroll: true });
+                        router.patch(
+                            `/admin/seller-products/${row.id}/approval`,
+                            {},
+                            { preserveScroll: true },
+                        );
                     }}
                 />
             ),
@@ -312,7 +319,11 @@ export default function Dashboard({
                 <Switch
                     checked={row.status}
                     onCheckedChange={() => {
-                        router.patch(`/admin/seller-products/${row.id}/status`, {}, { preserveScroll: true });
+                        router.patch(
+                            `/admin/seller-products/${row.id}/status`,
+                            {},
+                            { preserveScroll: true },
+                        );
                     }}
                 />
             ),
@@ -331,6 +342,19 @@ export default function Dashboard({
             <Head title="Дашборд" />
 
             <div className="space-y-6">
+                {/* Health Status */}
+                {healthStatus && (
+                    <div className={`flex items-center gap-4 rounded-lg border px-4 py-2 text-sm ${healthStatus.status === 'ok' ? 'border-green-200 bg-green-50 dark:border-green-900 dark:bg-green-950' : 'border-red-200 bg-red-50 dark:border-red-900 dark:bg-red-950'}`}>
+                        <Activity className={`h-4 w-4 ${healthStatus.status === 'ok' ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`} />
+                        <span className="font-medium">
+                            {healthStatus.status === 'ok' ? 'Система работает нормально' : 'Проблемы в системе'}
+                        </span>
+                        <span className="text-muted-foreground">
+                            БД: {healthStatus.db ? '✓' : '✗'} · Кеш: {healthStatus.cache ? '✓' : '✗'}
+                        </span>
+                    </div>
+                )}
+
                 {/* Statistics Cards */}
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
                     {/* Revenue */}
@@ -342,7 +366,9 @@ export default function Dashboard({
                             <DollarSign className="h-4 w-4 text-muted-foreground" />
                         </CardHeader>
                         <CardContent>
-                            <div className="text-2xl font-bold">{formatCurrency(statistics.total_revenue)} сом.</div>
+                            <div className="text-2xl font-bold">
+                                {formatCurrency(statistics.total_revenue)} сом.
+                            </div>
                             {revenueTrend !== 0 && (
                                 <p className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
                                     {revenueTrend > 0 ? (
@@ -350,10 +376,17 @@ export default function Dashboard({
                                     ) : (
                                         <TrendingDown className="h-3 w-3 text-red-500" />
                                     )}
-                                    <span className={revenueTrend > 0 ? 'text-green-600' : 'text-red-600'}>
-                                        {revenueTrend > 0 ? '+' : ''}{revenueTrend.toFixed(1)}%
-                                    </span>
-                                    {' '}от вчера
+                                    <span
+                                        className={
+                                            revenueTrend > 0
+                                                ? 'text-green-600'
+                                                : 'text-red-600'
+                                        }
+                                    >
+                                        {revenueTrend > 0 ? '+' : ''}
+                                        {revenueTrend.toFixed(1)}%
+                                    </span>{' '}
+                                    от вчера
                                 </p>
                             )}
                         </CardContent>
@@ -368,10 +401,13 @@ export default function Dashboard({
                             <ShoppingCart className="h-4 w-4 text-muted-foreground" />
                         </CardHeader>
                         <CardContent>
-                            <div className="text-2xl font-bold">{statistics.total_orders}</div>
+                            <div className="text-2xl font-bold">
+                                {statistics.total_orders}
+                            </div>
                             {statistics.pending_orders > 0 && (
                                 <p className="mt-1 text-xs text-yellow-600">
-                                    {statistics.pending_orders} ожидают обработки
+                                    {statistics.pending_orders} ожидают
+                                    обработки
                                 </p>
                             )}
                         </CardContent>
@@ -386,7 +422,9 @@ export default function Dashboard({
                             <Box className="h-4 w-4 text-muted-foreground" />
                         </CardHeader>
                         <CardContent>
-                            <div className="text-2xl font-bold">{statistics.total_products}</div>
+                            <div className="text-2xl font-bold">
+                                {statistics.total_products}
+                            </div>
                             {statistics.pending_products > 0 && (
                                 <p className="mt-1 text-xs text-orange-600">
                                     {statistics.pending_products} на модерации
@@ -404,7 +442,9 @@ export default function Dashboard({
                             <Users className="h-4 w-4 text-muted-foreground" />
                         </CardHeader>
                         <CardContent>
-                            <div className="text-2xl font-bold">{statistics.total_customers}</div>
+                            <div className="text-2xl font-bold">
+                                {statistics.total_customers}
+                            </div>
                         </CardContent>
                     </Card>
 
@@ -417,7 +457,9 @@ export default function Dashboard({
                             <Store className="h-4 w-4 text-muted-foreground" />
                         </CardHeader>
                         <CardContent>
-                            <div className="text-2xl font-bold">{statistics.total_vendors}</div>
+                            <div className="text-2xl font-bold">
+                                {statistics.total_vendors}
+                            </div>
                             {statistics.pending_vendors > 0 && (
                                 <p className="mt-1 text-xs text-orange-600">
                                     {statistics.pending_vendors} новых заявок
@@ -435,26 +477,41 @@ export default function Dashboard({
                         </CardHeader>
                         <CardContent>
                             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
-                                {Object.entries(orderStats).map(([status, count]) => {
-                                    const percentage = orderStatsTotal > 0
-                                        ? (count / orderStatsTotal) * 100
-                                        : 0;
-                                    return (
-                                        <div key={status} className="space-y-2">
-                                            <div className="flex items-center justify-between">
-                                                <span className="text-sm">{getStatusLabel(status)}</span>
-                                                <span className="text-sm font-semibold">{count}</span>
+                                {Object.entries(orderStats).map(
+                                    ([status, count]) => {
+                                        const percentage =
+                                            orderStatsTotal > 0
+                                                ? (count / orderStatsTotal) *
+                                                  100
+                                                : 0;
+                                        return (
+                                            <div
+                                                key={status}
+                                                className="space-y-2"
+                                            >
+                                                <div className="flex items-center justify-between">
+                                                    <span className="text-sm">
+                                                        {getStatusLabel(status)}
+                                                    </span>
+                                                    <span className="text-sm font-semibold">
+                                                        {count}
+                                                    </span>
+                                                </div>
+                                                <div className="h-2 overflow-hidden rounded-full bg-muted">
+                                                    <div
+                                                        className={`h-full rounded-full transition-all ${ORDER_STATUS_COLORS[status] || 'bg-gray-500'}`}
+                                                        style={{
+                                                            width: `${percentage}%`,
+                                                        }}
+                                                    />
+                                                </div>
+                                                <p className="text-xs text-muted-foreground">
+                                                    {percentage.toFixed(0)}%
+                                                </p>
                                             </div>
-                                            <div className="h-2 overflow-hidden rounded-full bg-muted">
-                                                <div
-                                                    className={`h-full rounded-full transition-all ${ORDER_STATUS_COLORS[status] || 'bg-gray-500'}`}
-                                                    style={{ width: `${percentage}%` }}
-                                                />
-                                            </div>
-                                            <p className="text-xs text-muted-foreground">{percentage.toFixed(0)}%</p>
-                                        </div>
-                                    );
-                                })}
+                                        );
+                                    },
+                                )}
                             </div>
                         </CardContent>
                     </Card>
@@ -469,17 +526,32 @@ export default function Dashboard({
                                     value={selectedPeriod}
                                     onValueChange={(value) => {
                                         setSelectedPeriod(value);
-                                        router.get('/admin/dashboard', { period: value }, { preserveScroll: true, preserveState: true });
+                                        router.get(
+                                            '/admin/dashboard',
+                                            { period: value },
+                                            {
+                                                preserveScroll: true,
+                                                preserveState: true,
+                                            },
+                                        );
                                     }}
                                 >
                                     <SelectTrigger className="w-[150px]">
                                         <SelectValue placeholder="Период" />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="7">Последние 7 дней</SelectItem>
-                                        <SelectItem value="30">Последние 30 дней</SelectItem>
-                                        <SelectItem value="90">Последние 90 дней</SelectItem>
-                                        <SelectItem value="all">За всё время</SelectItem>
+                                        <SelectItem value="7">
+                                            Последние 7 дней
+                                        </SelectItem>
+                                        <SelectItem value="30">
+                                            Последние 30 дней
+                                        </SelectItem>
+                                        <SelectItem value="90">
+                                            Последние 90 дней
+                                        </SelectItem>
+                                        <SelectItem value="all">
+                                            За всё время
+                                        </SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
@@ -487,24 +559,41 @@ export default function Dashboard({
                         <CardContent>
                             <div className="grid gap-3 sm:grid-cols-3">
                                 <div className="rounded-lg border p-3">
-                                    <p className="text-sm text-muted-foreground">View → Cart</p>
-                                    <p className="text-xl font-bold">{funnelMetrics.view_to_cart.toFixed(2)}%</p>
+                                    <p className="text-sm text-muted-foreground">
+                                        View → Cart
+                                    </p>
+                                    <p className="text-xl font-bold">
+                                        {funnelMetrics.view_to_cart.toFixed(2)}%
+                                    </p>
                                     <p className="text-xs text-muted-foreground">
-                                        {funnelMetrics.viewers} → {funnelMetrics.cart_users}
+                                        {funnelMetrics.viewers} →{' '}
+                                        {funnelMetrics.cart_users}
                                     </p>
                                 </div>
                                 <div className="rounded-lg border p-3">
-                                    <p className="text-sm text-muted-foreground">Cart → Order</p>
-                                    <p className="text-xl font-bold">{funnelMetrics.cart_to_order.toFixed(2)}%</p>
+                                    <p className="text-sm text-muted-foreground">
+                                        Cart → Order
+                                    </p>
+                                    <p className="text-xl font-bold">
+                                        {funnelMetrics.cart_to_order.toFixed(2)}
+                                        %
+                                    </p>
                                     <p className="text-xs text-muted-foreground">
-                                        {funnelMetrics.cart_users} → {funnelMetrics.buyers}
+                                        {funnelMetrics.cart_users} →{' '}
+                                        {funnelMetrics.buyers}
                                     </p>
                                 </div>
                                 <div className="rounded-lg border p-3">
-                                    <p className="text-sm text-muted-foreground">View → Order</p>
-                                    <p className="text-xl font-bold">{funnelMetrics.view_to_order.toFixed(2)}%</p>
+                                    <p className="text-sm text-muted-foreground">
+                                        View → Order
+                                    </p>
+                                    <p className="text-xl font-bold">
+                                        {funnelMetrics.view_to_order.toFixed(2)}
+                                        %
+                                    </p>
                                     <p className="text-xs text-muted-foreground">
-                                        {funnelMetrics.viewers} → {funnelMetrics.buyers}
+                                        {funnelMetrics.viewers} →{' '}
+                                        {funnelMetrics.buyers}
                                     </p>
                                 </div>
                             </div>
@@ -519,27 +608,44 @@ export default function Dashboard({
                             {topProducts.length > 0 ? (
                                 <div className="space-y-3">
                                     {topProducts.map((item) => (
-                                        <div key={item.id} className="flex items-center justify-between gap-3 rounded-lg border p-3">
+                                        <div
+                                            key={item.id}
+                                            className="flex items-center justify-between gap-3 rounded-lg border p-3"
+                                        >
                                             <div className="flex items-center gap-3">
                                                 <img
-                                                    src={item.thumb_image}
+                                                    src={`/storage/${item.thumb_image}`}
                                                     alt={item.name}
                                                     className="h-10 w-10 rounded object-cover"
                                                 />
                                                 <div>
-                                                    <p className="line-clamp-1 text-sm font-medium">{item.name}</p>
-                                                    <p className="text-xs text-muted-foreground">{item.orders_count} заказов</p>
+                                                    <p className="line-clamp-1 text-sm font-medium">
+                                                        {item.name}
+                                                    </p>
+                                                    <p className="text-xs text-muted-foreground">
+                                                        {item.orders_count}{' '}
+                                                        заказов
+                                                    </p>
                                                 </div>
                                             </div>
                                             <div className="text-right">
-                                                <p className="text-sm font-semibold">{item.sold_qty} шт.</p>
-                                                <p className="text-xs text-muted-foreground">{formatCurrency(item.gross_revenue)} сом.</p>
+                                                <p className="text-sm font-semibold">
+                                                    {item.sold_qty} шт.
+                                                </p>
+                                                <p className="text-xs text-muted-foreground">
+                                                    {formatCurrency(
+                                                        item.gross_revenue,
+                                                    )}{' '}
+                                                    сом.
+                                                </p>
                                             </div>
                                         </div>
                                     ))}
                                 </div>
                             ) : (
-                                <p className="text-sm text-muted-foreground">Недостаточно данных для топа.</p>
+                                <p className="text-sm text-muted-foreground">
+                                    Недостаточно данных для топа.
+                                </p>
                             )}
                         </CardContent>
                     </Card>
@@ -566,8 +672,12 @@ export default function Dashboard({
                                     <Package className="h-4 w-4 text-blue-600 dark:text-blue-400" />
                                 </div>
                                 <div>
-                                    <p className="text-sm text-muted-foreground">Всего</p>
-                                    <p className="text-lg font-bold">{vendorProductStats.total}</p>
+                                    <p className="text-sm text-muted-foreground">
+                                        Всего
+                                    </p>
+                                    <p className="text-lg font-bold">
+                                        {vendorProductStats.total}
+                                    </p>
                                 </div>
                             </div>
                             <div className="flex items-center gap-3 rounded-lg border p-3">
@@ -575,8 +685,12 @@ export default function Dashboard({
                                     <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-400" />
                                 </div>
                                 <div>
-                                    <p className="text-sm text-muted-foreground">Одобрено</p>
-                                    <p className="text-lg font-bold">{vendorProductStats.approved}</p>
+                                    <p className="text-sm text-muted-foreground">
+                                        Одобрено
+                                    </p>
+                                    <p className="text-lg font-bold">
+                                        {vendorProductStats.approved}
+                                    </p>
                                 </div>
                             </div>
                             <div className="flex items-center gap-3 rounded-lg border p-3">
@@ -584,8 +698,12 @@ export default function Dashboard({
                                     <Clock className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
                                 </div>
                                 <div>
-                                    <p className="text-sm text-muted-foreground">На модерации</p>
-                                    <p className="text-lg font-bold">{vendorProductStats.pending}</p>
+                                    <p className="text-sm text-muted-foreground">
+                                        На модерации
+                                    </p>
+                                    <p className="text-lg font-bold">
+                                        {vendorProductStats.pending}
+                                    </p>
                                 </div>
                             </div>
                             <div className="flex items-center gap-3 rounded-lg border p-3">
@@ -593,13 +711,20 @@ export default function Dashboard({
                                     <Activity className="h-4 w-4 text-purple-600 dark:text-purple-400" />
                                 </div>
                                 <div>
-                                    <p className="text-sm text-muted-foreground">Активных</p>
-                                    <p className="text-lg font-bold">{vendorProductStats.active}</p>
+                                    <p className="text-sm text-muted-foreground">
+                                        Активных
+                                    </p>
+                                    <p className="text-lg font-bold">
+                                        {vendorProductStats.active}
+                                    </p>
                                 </div>
                             </div>
                         </div>
                         {vendorProducts.length > 0 ? (
-                            <DataTable data={vendorProducts} columns={vendorProductColumns} />
+                            <DataTable
+                                data={vendorProducts}
+                                columns={vendorProductColumns}
+                            />
                         ) : (
                             <p className="py-4 text-center text-sm text-muted-foreground">
                                 Товары от продавцов пока отсутствуют
@@ -620,7 +745,10 @@ export default function Dashboard({
                             </CardTitle>
                         </CardHeader>
                         <CardContent>
-                            <DataTable data={pendingVendors} columns={vendorColumns} />
+                            <DataTable
+                                data={pendingVendors}
+                                columns={vendorColumns}
+                            />
                         </CardContent>
                     </Card>
                 )}
@@ -637,7 +765,10 @@ export default function Dashboard({
                             </CardTitle>
                         </CardHeader>
                         <CardContent>
-                            <DataTable data={pendingProducts} columns={productColumns} />
+                            <DataTable
+                                data={pendingProducts}
+                                columns={productColumns}
+                            />
                         </CardContent>
                     </Card>
                 )}
@@ -649,7 +780,10 @@ export default function Dashboard({
                             <CardTitle>Последние заказы</CardTitle>
                         </CardHeader>
                         <CardContent>
-                            <DataTable data={recentOrders} columns={orderColumns} />
+                            <DataTable
+                                data={recentOrders}
+                                columns={orderColumns}
+                            />
                         </CardContent>
                     </Card>
                 )}
@@ -668,28 +802,38 @@ export default function Dashboard({
                         <CardContent>
                             <div className="divide-y">
                                 {pendingReviews.map((review) => (
-                                    <div key={review.id} className="flex items-start justify-between gap-4 py-4 first:pt-0 last:pb-0">
+                                    <div
+                                        key={review.id}
+                                        className="flex items-start justify-between gap-4 py-4 first:pt-0 last:pb-0"
+                                    >
                                         <div className="min-w-0 flex-1">
                                             <div className="mb-1 flex items-center gap-2">
-                                                <span className="font-medium">{review.user.name}</span>
-                                                <span className="text-muted-foreground">→</span>
+                                                <span className="font-medium">
+                                                    {review.user.name}
+                                                </span>
+                                                <span className="text-muted-foreground">
+                                                    →
+                                                </span>
                                                 <span className="truncate text-sm text-muted-foreground">
                                                     {review.product.name}
                                                 </span>
                                             </div>
                                             <div className="mb-2 flex items-center gap-0.5">
-                                                {Array.from({ length: 5 }).map((_, i) => (
-                                                    <Star
-                                                        key={i}
-                                                        className={`h-3.5 w-3.5 ${
-                                                            i < review.rating
-                                                                ? 'fill-yellow-400 text-yellow-400'
-                                                                : 'text-muted-foreground/30'
-                                                        }`}
-                                                    />
-                                                ))}
+                                                {Array.from({ length: 5 }).map(
+                                                    (_, i) => (
+                                                        <Star
+                                                            key={i}
+                                                            className={`h-3.5 w-3.5 ${
+                                                                i <
+                                                                review.rating
+                                                                    ? 'fill-yellow-400 text-yellow-400'
+                                                                    : 'text-muted-foreground/30'
+                                                            }`}
+                                                        />
+                                                    ),
+                                                )}
                                             </div>
-                                            <p className="text-sm text-muted-foreground line-clamp-2">
+                                            <p className="line-clamp-2 text-sm text-muted-foreground">
                                                 {review.review}
                                             </p>
                                             <p className="mt-1 text-xs text-muted-foreground">
@@ -697,10 +841,25 @@ export default function Dashboard({
                                             </p>
                                         </div>
                                         <div className="flex shrink-0 gap-2">
-                                            <Button size="sm" onClick={() => handleApproveReview(review.id)}>
+                                            <Button
+                                                size="sm"
+                                                onClick={() =>
+                                                    handleApproveReview(
+                                                        review.id,
+                                                    )
+                                                }
+                                            >
                                                 Одобрить
                                             </Button>
-                                            <Button size="sm" variant="destructive" onClick={() => handleDeleteReview(review.id)}>
+                                            <Button
+                                                size="sm"
+                                                variant="destructive"
+                                                onClick={() =>
+                                                    handleDeleteReview(
+                                                        review.id,
+                                                    )
+                                                }
+                                            >
                                                 Удалить
                                             </Button>
                                         </div>

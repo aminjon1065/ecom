@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
  * @property int $id
@@ -21,6 +22,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property-read int|null $products_count
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\SubCategory> $sub_categories
  * @property-read int|null $sub_categories_count
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Category newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Category newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Category query()
@@ -31,13 +33,17 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Category whereSlug($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Category whereStatus($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Category whereUpdatedAt($value)
+ *
  * @mixin \Eloquent
  */
 class Category extends Model
 {
+    use SoftDeletes;
+
     protected $fillable = ['name', 'slug', 'icon', 'status'];
+
     protected $casts = [
-        'status' => 'boolean'
+        'status' => 'boolean',
     ];
 
     public function products(): HasMany
@@ -59,5 +65,4 @@ class Category extends Model
     {
         return $this->hasMany(Brand::class);
     }
-
 }

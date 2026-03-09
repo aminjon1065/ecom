@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Brand;
+use App\Services\ImageService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -12,6 +13,10 @@ use Str;
 
 class BrandController extends Controller
 {
+    public function __construct(
+        private readonly ImageService $imageService,
+    ) {}
+
     public function index(Request $request): \Inertia\Response
     {
         $brands = Brand::query()
@@ -43,7 +48,10 @@ class BrandController extends Controller
             'status' => ['boolean'],
         ]);
 
-        $data['logo'] = $request->file('logo')->store('brands', 'public');
+        $logo = $request->file('logo');
+        $data['logo'] = $this->imageService->isRaster($logo)
+            ? $this->imageService->storeThumb($logo, 'brands', 300, 300)
+            : $logo->store('brands', 'public');
         $data['slug'] = Str::slug($data['name']);
         $data['is_featured'] = $data['is_featured'] ?? true;
         $data['status'] = $data['status'] ?? true;
@@ -58,7 +66,7 @@ class BrandController extends Controller
         $data = $request->validate([
             'logo' => ['nullable', 'image', 'mimes:png,jpg,jpeg,webp,svg', 'max:2048'],
             'name' => ['required', 'string', 'max:255'],
-            'slug' => ['nullable', 'string', 'max:255', 'unique:brands,slug,' . $brand->id],
+            'slug' => ['nullable', 'string', 'max:255', 'unique:brands,slug,'.$brand->id],
             'is_featured' => ['boolean'],
             'status' => ['boolean'],
         ]);
@@ -68,7 +76,10 @@ class BrandController extends Controller
                 Storage::disk('public')->delete($brand->logo);
             }
 
-            $data['logo'] = $request->file('logo')->store('brands', 'public');
+            $logo = $request->file('logo');
+            $data['logo'] = $this->imageService->isRaster($logo)
+                ? $this->imageService->storeThumb($logo, 'brands', 300, 300)
+                : $logo->store('brands', 'public');
         } else {
             unset($data['logo']);
         }
@@ -85,7 +96,7 @@ class BrandController extends Controller
     public function toggleStatus(Brand $brand): RedirectResponse
     {
         $brand->update([
-            'status' => !$brand->status,
+            'status' => ! $brand->status,
         ]);
 
         return redirect()->back();
@@ -105,7 +116,7 @@ class BrandController extends Controller
     public function toggleFeature(Brand $brand): RedirectResponse
     {
         $brand->update([
-            'is_featured' => !$brand->is_featured,
+            'is_featured' => ! $brand->is_featured,
         ]);
 
         return redirect()->back();

@@ -2,9 +2,11 @@
 
 namespace App\Models;
 
+use App\Enums\ProductType;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
  * @property int $id
@@ -83,6 +85,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  */
 class Product extends Model
 {
+    use SoftDeletes;
+
     protected $fillable = [
         'name',
         'code',
@@ -121,6 +125,7 @@ class Product extends Model
         'is_approved' => 'boolean',
         'offer_start_date' => 'date',
         'offer_end_date' => 'date',
+        'product_type' => ProductType::class,
     ];
 
     public function category(): BelongsTo

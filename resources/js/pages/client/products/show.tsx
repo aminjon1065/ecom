@@ -58,6 +58,17 @@ interface Review {
     user: { id: number; name: string; avatar?: string | null };
 }
 
+interface Seo {
+    title: string;
+    description: string;
+    image: string | null;
+    price: number;
+    currency: string;
+    availability: 'InStock' | 'OutOfStock';
+    sku: string | null;
+    brand: string | null;
+}
+
 interface Props {
     product: Product;
     reviews: Review[];
@@ -69,6 +80,7 @@ interface Props {
     isInWishlist: boolean;
     isInCart: boolean;
     deliveryEstimate: string | null;
+    seo: Seo;
 }
 
 export default function ProductShow({
@@ -82,6 +94,7 @@ export default function ProductShow({
     isInWishlist,
     isInCart,
     deliveryEstimate,
+    seo,
 }: Props) {
     const imgPrefix = (path: string) =>
         path.startsWith('http') ? path : `/storage/${path}`;
@@ -234,7 +247,32 @@ export default function ProductShow({
 
     return (
         <AppHeaderLayout>
-            <Head title={product.name} />
+            <Head title={seo.title}>
+                <meta name="description" content={seo.description} />
+                <meta property="og:title" content={seo.title} />
+                <meta property="og:description" content={seo.description} />
+                <meta property="og:type" content="product" />
+                {seo.image && <meta property="og:image" content={seo.image} />}
+                <meta property="product:price:amount" content={String(seo.price)} />
+                <meta property="product:price:currency" content={seo.currency} />
+                <script type="application/ld+json">
+                    {JSON.stringify({
+                        '@context': 'https://schema.org',
+                        '@type': 'Product',
+                        name: seo.title,
+                        description: seo.description,
+                        image: seo.image,
+                        sku: seo.sku,
+                        brand: seo.brand ? { '@type': 'Brand', name: seo.brand } : undefined,
+                        offers: {
+                            '@type': 'Offer',
+                            price: seo.price,
+                            priceCurrency: seo.currency,
+                            availability: `https://schema.org/${seo.availability}`,
+                        },
+                    })}
+                </script>
+            </Head>
 
             <div className="container mx-auto px-4 py-6 pb-24 lg:pb-6">
                 {/* Breadcrumb */}

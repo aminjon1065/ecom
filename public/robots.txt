@@ -1,2 +1,8 @@
 User-agent: *
-Disallow:
+Disallow: /admin/
+Disallow: /vendor/
+Disallow: /checkout
+Disallow: /cart
+Disallow: /account/
+
+Sitemap: https://ecom.test/sitemap.xml

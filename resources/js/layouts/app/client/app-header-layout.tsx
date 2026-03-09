@@ -33,7 +33,10 @@ const AppHeaderLayout = ({ children }: AppHeaderLayoutProps) => {
             {/* Header */}
             <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-backdrop-blur:bg-background/60">
                 <div className="mx-auto flex h-14 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
-                    <Link href="/" className="flex shrink-0 items-center gap-2 font-semibold">
+                    <Link
+                        href="/"
+                        className="flex shrink-0 items-center gap-2 font-semibold"
+                    >
                         <AppLogo />
                     </Link>
 
@@ -41,7 +44,10 @@ const AppHeaderLayout = ({ children }: AppHeaderLayoutProps) => {
                     <NavMain />
 
                     {/* Desktop: Search bar with suggestions */}
-                    <SearchSuggestions className="hidden w-full md:block" inputClassName="h-9" />
+                    <SearchSuggestions
+                        className="hidden w-full md:block"
+                        inputClassName="h-9"
+                    />
 
                     {/* Desktop: Action buttons */}
                     <div className="hidden items-center gap-1 md:flex">
@@ -50,7 +56,11 @@ const AppHeaderLayout = ({ children }: AppHeaderLayoutProps) => {
                                 <Tooltip>
                                     <TooltipTrigger asChild>
                                         <Link href={wishlistIndex().url}>
-                                            <Button variant="ghost" size="icon" className="relative">
+                                            <Button
+                                                variant="ghost"
+                                                size="icon"
+                                                className="relative"
+                                            >
                                                 <Heart className="h-4 w-4" />
                                                 {(wishlistCount ?? 0) > 0 && (
                                                     <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-[10px] text-white">
@@ -66,7 +76,11 @@ const AppHeaderLayout = ({ children }: AppHeaderLayoutProps) => {
                                 <Tooltip>
                                     <TooltipTrigger asChild>
                                         <Link href={cartIndex().url}>
-                                            <Button variant="ghost" size="icon" className="relative">
+                                            <Button
+                                                variant="ghost"
+                                                size="icon"
+                                                className="relative"
+                                            >
                                                 <ShoppingCart className="h-4 w-4" />
                                                 {(cartCount ?? 0) > 0 && (
                                                     <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[10px] text-primary-foreground">
@@ -85,9 +99,15 @@ const AppHeaderLayout = ({ children }: AppHeaderLayoutProps) => {
 
                         {auth.user ? (
                             <Link href={accountDashboard().url}>
-                                <Button variant="ghost" size="sm" className="gap-1.5">
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="gap-1.5"
+                                >
                                     <User className="h-4 w-4" />
-                                    <span className="hidden sm:inline">{auth.user.name}</span>
+                                    <span className="hidden sm:inline">
+                                        {auth.user.name}
+                                    </span>
                                 </Button>
                             </Link>
                         ) : (
@@ -105,7 +125,11 @@ const AppHeaderLayout = ({ children }: AppHeaderLayoutProps) => {
                         <ModeToggle />
                         {!auth.user && (
                             <Link href={login().url}>
-                                <Button size="sm" variant="ghost" className="gap-1 text-xs">
+                                <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    className="gap-1 text-xs"
+                                >
                                     <LogIn className="h-4 w-4" />
                                 </Button>
                             </Link>
@@ -115,7 +139,10 @@ const AppHeaderLayout = ({ children }: AppHeaderLayoutProps) => {
 
                 {/* Mobile: Search bar below header with suggestions */}
                 <div className="border-t px-4 py-2 md:hidden">
-                    <SearchSuggestions placeholder="Искать товары..." inputClassName="h-9" />
+                    <SearchSuggestions
+                        placeholder="Искать товары..."
+                        inputClassName="h-9"
+                    />
                 </div>
             </header>
 
@@ -129,24 +156,74 @@ const AppHeaderLayout = ({ children }: AppHeaderLayoutProps) => {
                         <div>
                             <h3 className="mb-3 font-semibold">О нас</h3>
                             <p className="text-sm text-muted-foreground">
-                                Современная платформа электронной коммерции с широким ассортиментом товаров.
+                                Современная платформа электронной коммерции с
+                                широким ассортиментом товаров.
                             </p>
                         </div>
                         <div>
                             <h3 className="mb-3 font-semibold">Категории</h3>
                             <ul className="space-y-2 text-sm text-muted-foreground">
-                                <li><Link href="/products" className="hover:text-foreground">Все товары</Link></li>
-                                <li><Link href="/products?sort=latest" className="hover:text-foreground">Новинки</Link></li>
-                                <li><Link href="/products?sort=popular" className="hover:text-foreground">Популярные</Link></li>
+                                <li>
+                                    <Link
+                                        href="/products"
+                                        className="hover:text-foreground"
+                                    >
+                                        Все товары
+                                    </Link>
+                                </li>
+                                <li>
+                                    <Link
+                                        href="/products?sort=latest"
+                                        className="hover:text-foreground"
+                                    >
+                                        Новинки
+                                    </Link>
+                                </li>
+                                <li>
+                                    <Link
+                                        href="/products?sort=popular"
+                                        className="hover:text-foreground"
+                                    >
+                                        Популярные
+                                    </Link>
+                                </li>
                             </ul>
                         </div>
                         <div>
                             <h3 className="mb-3 font-semibold">Информация</h3>
                             <ul className="space-y-2 text-sm text-muted-foreground">
-                                <li><a href="#" className="hover:text-foreground">Доставка</a></li>
-                                <li><a href="#" className="hover:text-foreground">Оплата</a></li>
-                                <li><a href="#" className="hover:text-foreground">Возврат</a></li>
-                                <li><Link href="/track-order" className="hover:text-foreground">Отслеживание заказа</Link></li>
+                                <li>
+                                    <a
+                                        href="#"
+                                        className="hover:text-foreground"
+                                    >
+                                        Доставка
+                                    </a>
+                                </li>
+                                <li>
+                                    <a
+                                        href="#"
+                                        className="hover:text-foreground"
+                                    >
+                                        Оплата
+                                    </a>
+                                </li>
+                                <li>
+                                    <a
+                                        href="#"
+                                        className="hover:text-foreground"
+                                    >
+                                        Возврат
+                                    </a>
+                                </li>
+                                <li>
+                                    <Link
+                                        href="/track-order"
+                                        className="hover:text-foreground"
+                                    >
+                                        Отслеживание заказа
+                                    </Link>
+                                </li>
                             </ul>
                         </div>
                         <div>
@@ -157,17 +234,30 @@ const AppHeaderLayout = ({ children }: AppHeaderLayoutProps) => {
                             </ul>
                         </div>
                     </div>
-                    <div className="mt-8 border-t pt-6 text-center text-sm text-muted-foreground">
-                        &copy; {new Date().getFullYear()} Ecom. Все права защищены.
+                    <div className="flex flex-col justify-between sm:flex-row">
+                        <div className="mt-8 border-t pt-6 text-center text-sm text-muted-foreground">
+                            &copy; {new Date().getFullYear()} Ecom. Все права
+                            защищены.
+                        </div>
+
+                        <div className="mt-8 border-t pt-6 text-center text-sm text-muted-foreground">
+                            <a href="https://t.me/error_syntax">Techdev</a>
+                        </div>
                     </div>
                 </div>
             </footer>
 
             {/* Mobile bottom navigation */}
-            <MobileBottomNav onCatalogOpen={() => setCatalogOpen(!catalogOpen)} catalogOpen={catalogOpen} />
+            <MobileBottomNav
+                onCatalogOpen={() => setCatalogOpen(!catalogOpen)}
+                catalogOpen={catalogOpen}
+            />
 
             {/* Mobile catalog overlay */}
-            <MobileCatalogOverlay open={catalogOpen} onClose={() => setCatalogOpen(false)} />
+            <MobileCatalogOverlay
+                open={catalogOpen}
+                onClose={() => setCatalogOpen(false)}
+            />
             <SocialFloatingButton />
         </div>
     );

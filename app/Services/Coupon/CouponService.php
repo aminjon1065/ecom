@@ -23,30 +23,22 @@ class CouponService
             ->where('code', $normalizedCode)
             ->first();
 
-        if (! $coupon || ! $coupon->status) {
+        if (! $coupon || ! $coupon->is_active) {
             return CouponResult::invalid('Недействительный или просроченный купон.');
         }
 
-        if (isset($coupon->is_active) && $coupon->is_active === false) {
-            return CouponResult::invalid('Недействительный или просроченный купон.');
-        }
-
-        $startsAt = $coupon->starts_at ?? $coupon->start_date;
-        $endsAt = $coupon->ends_at ?? $coupon->end_date;
-
-        if ($startsAt !== null && $startsAt->isFuture()) {
+        if ($coupon->starts_at !== null && $coupon->starts_at->isFuture()) {
             return CouponResult::invalid('Купон ещё не активен.');
         }
 
-        if ($endsAt !== null && $endsAt->isPast()) {
+        if ($coupon->ends_at !== null && $coupon->ends_at->isPast()) {
             return CouponResult::invalid('Срок действия купона истёк.');
         }
 
-        $usageLimit = $coupon->usage_limit ?? $coupon->max_use;
         if (
-            $usageLimit !== null
-            && $usageLimit > 0
-            && $coupon->total_used >= $usageLimit
+            $coupon->usage_limit !== null
+            && $coupon->usage_limit > 0
+            && $coupon->total_used >= $coupon->usage_limit
         ) {
             return CouponResult::invalid('Купон уже использован максимальное количество раз.');
         }
@@ -68,8 +60,7 @@ class CouponService
             return CouponResult::invalid('Купон доступен только для первого заказа.');
         }
 
-        $usagePerUser = $coupon->usage_per_user;
-        if ($usagePerUser !== null && $usagePerUser > 0 && $userUsageCount >= $usagePerUser) {
+        if ($coupon->usage_per_user !== null && $coupon->usage_per_user > 0 && $userUsageCount >= $coupon->usage_per_user) {
             return CouponResult::invalid('Вы уже использовали этот купон максимальное количество раз.');
         }
 

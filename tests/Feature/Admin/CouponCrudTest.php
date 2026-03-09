@@ -28,12 +28,12 @@ it('creates coupon from admin panel with synced coupon engine fields', function 
         'name' => 'Spring Sale',
         'code' => 'spring20',
         'quantity' => 15,
-        'max_use' => 30,
-        'start_date' => now()->toDateString(),
-        'end_date' => now()->addDays(5)->toDateString(),
+        'usage_limit' => 30,
+        'starts_at' => now()->toDateString(),
+        'ends_at' => now()->addDays(5)->toDateString(),
         'discount_type' => 'percent',
         'discount' => 20,
-        'status' => true,
+        'is_active' => true,
     ]);
 
     $response->assertRedirect();
@@ -46,18 +46,41 @@ it('creates coupon from admin panel with synced coupon engine fields', function 
         ->and($coupon->ends_at)->not->toBeNull();
 });
 
+it('creates coupon using legacy field names for backward compatibility', function () {
+    $admin = makeAdminForCouponCrud();
+
+    $response = $this->actingAs($admin)->post(route('admin.coupon.store'), [
+        'name' => 'Legacy Sale',
+        'code' => 'legacy10',
+        'quantity' => 5,
+        'max_use' => 20,
+        'start_date' => now()->toDateString(),
+        'end_date' => now()->addDays(3)->toDateString(),
+        'discount_type' => 'fixed',
+        'discount' => 10,
+        'status' => true,
+    ]);
+
+    $response->assertRedirect()->assertSessionHasNoErrors();
+
+    $coupon = Coupons::query()->where('code', 'LEGACY10')->firstOrFail();
+
+    expect($coupon->usage_limit)->toBe(20)
+        ->and($coupon->is_active)->toBeTrue()
+        ->and($coupon->starts_at)->not->toBeNull();
+});
+
 it('renders coupon create and edit pages in admin panel', function () {
     $admin = makeAdminForCouponCrud();
     $coupon = Coupons::query()->create([
         'name' => 'Editable coupon',
         'code' => 'EDIT10',
         'quantity' => 10,
-        'max_use' => 20,
-        'start_date' => now()->subDay()->toDateString(),
-        'end_date' => now()->addDay()->toDateString(),
+        'usage_limit' => 20,
+        'starts_at' => now()->subDay(),
+        'ends_at' => now()->addDay(),
         'discount_type' => 'fixed',
         'discount' => 10,
-        'status' => true,
         'is_active' => true,
         'total_used' => 0,
     ]);
@@ -82,9 +105,9 @@ it('validates admin coupon payload', function () {
         'name' => '',
         'code' => '',
         'quantity' => 0,
-        'max_use' => 0,
-        'start_date' => now()->toDateString(),
-        'end_date' => now()->subDay()->toDateString(),
+        'usage_limit' => 0,
+        'starts_at' => now()->toDateString(),
+        'ends_at' => now()->subDay()->toDateString(),
         'discount_type' => 'invalid',
         'discount' => -1,
     ]);
@@ -93,8 +116,8 @@ it('validates admin coupon payload', function () {
         'name',
         'code',
         'quantity',
-        'max_use',
-        'end_date',
+        'usage_limit',
+        'ends_at',
         'discount_type',
         'discount',
     ]);
@@ -106,12 +129,11 @@ it('updates and deletes coupon from admin panel', function () {
         'name' => 'Legacy coupon',
         'code' => 'LEGACY10',
         'quantity' => 10,
-        'max_use' => 20,
-        'start_date' => now()->subDay()->toDateString(),
-        'end_date' => now()->addDay()->toDateString(),
+        'usage_limit' => 20,
+        'starts_at' => now()->subDay(),
+        'ends_at' => now()->addDay(),
         'discount_type' => 'fixed',
         'discount' => 10,
-        'status' => true,
         'is_active' => true,
         'total_used' => 0,
     ]);
@@ -120,12 +142,12 @@ it('updates and deletes coupon from admin panel', function () {
         'name' => 'Updated coupon',
         'code' => 'LEGACY15',
         'quantity' => 25,
-        'max_use' => 60,
-        'start_date' => now()->toDateString(),
-        'end_date' => now()->addDays(7)->toDateString(),
+        'usage_limit' => 60,
+        'starts_at' => now()->toDateString(),
+        'ends_at' => now()->addDays(7)->toDateString(),
         'discount_type' => 'fixed',
         'discount' => 15,
-        'status' => false,
+        'is_active' => false,
     ]);
 
     $updateResponse->assertRedirect();

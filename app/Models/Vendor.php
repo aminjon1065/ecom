@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
  * @property int $id
@@ -22,6 +23,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Product> $products
  * @property-read int|null $products_count
  * @property-read \App\Models\User $user
+ *
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Vendor newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Vendor newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Vendor query()
@@ -37,10 +39,13 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Vendor whereTelegramUrl($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Vendor whereUpdatedAt($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Vendor whereUserId($value)
+ *
  * @mixin \Eloquent
  */
 class Vendor extends Model
 {
+    use SoftDeletes;
+
     protected $fillable = [
         'user_id',
         'banner',
@@ -67,5 +72,4 @@ class Vendor extends Model
     {
         return $this->hasMany(Product::class);
     }
-
 }

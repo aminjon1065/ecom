@@ -26,5 +26,9 @@ class AppServiceProvider extends ServiceProvider
     {
         Gate::policy(Product::class, ProductPolicy::class);
         Gate::policy(Vendor::class, VendorPolicy::class);
+
+        Gate::define('viewPulse', function ($user) {
+            return $user->hasRole('admin');
+        });
     }
 }

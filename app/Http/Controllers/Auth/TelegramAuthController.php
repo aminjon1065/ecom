@@ -34,7 +34,7 @@ class TelegramAuthController extends Controller
             'photo_url', 'auth_date', 'hash',
         ]);
 
-        if (!$this->validateTelegramData($data)) {
+        if (! $this->validateTelegramData($data)) {
             return redirect()->route('login')->withErrors([
                 'telegram' => 'Неверные данные авторизации Telegram. Попробуйте снова.',
             ]);
@@ -57,11 +57,11 @@ class TelegramAuthController extends Controller
         // Find existing user by telegram_id or create new one
         $user = User::where('telegram_id', $telegramId)->first();
 
-        if (!$user) {
+        if (! $user) {
             // Check if user with telegram username email pattern exists (migration from old data)
             $user = User::create([
                 'name' => $fullName,
-                'email' => 'tg_' . $telegramId . '@telegram.local',
+                'email' => 'tg_'.$telegramId.'@telegram.local',
                 'phone' => null,
                 'telegram_id' => $telegramId,
                 'telegram_username' => $username,
@@ -73,10 +73,12 @@ class TelegramAuthController extends Controller
             $user->assignRole('user');
         } else {
             // Update user info from Telegram (name, avatar, username)
+            // Also mark email as verified — Telegram itself verifies identity
             $user->update([
                 'name' => $fullName,
                 'telegram_username' => $username,
                 'avatar' => $photoUrl ?: $user->avatar,
+                'email_verified_at' => $user->email_verified_at ?? now(),
             ]);
         }
 

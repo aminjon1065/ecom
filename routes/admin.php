@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Admin\AuditLogController;
 use App\Http\Controllers\Admin\BrandController;
 use App\Http\Controllers\Admin\Category\CategoryController;
 use App\Http\Controllers\Admin\Category\ChildCategoryController;
@@ -120,3 +121,6 @@ Route::get('popular-searches/{popularSearchQuery}/edit', [PopularSearchQueryCont
 Route::put('popular-searches/{popularSearchQuery}', [PopularSearchQueryController::class, 'update'])->name('popular-search-query.update');
 Route::patch('popular-searches/{popularSearchQuery}/status', [PopularSearchQueryController::class, 'toggleStatus'])->name('popular-search-query.toggle-status');
 Route::delete('popular-searches/{popularSearchQuery}', [PopularSearchQueryController::class, 'destroy'])->name('popular-search-query.destroy');
+
+// Журнал действий
+Route::get('audit-log', [AuditLogController::class, 'index'])->name('audit-log.index');

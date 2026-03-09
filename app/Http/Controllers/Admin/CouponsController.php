@@ -29,13 +29,6 @@ class CouponsController extends Controller
     public function store(StoreCouponRequest $request): RedirectResponse
     {
         $data = $request->validated();
-
-        $data['status'] = $data['status'] ?? true;
-        $data['is_active'] = $data['status'];
-        $data['usage_limit'] = $data['max_use'];
-        $data['usage_per_user'] = $data['usage_per_user'] ?? 1;
-        $data['starts_at'] = $data['start_date'];
-        $data['ends_at'] = $data['end_date'];
         $data['total_used'] = 0;
 
         Coupons::create($data);
@@ -45,13 +38,7 @@ class CouponsController extends Controller
 
     public function update(UpdateCouponRequest $request, Coupons $coupon): RedirectResponse
     {
-        $data = $request->validated();
-        $data['is_active'] = $data['status'] ?? true;
-        $data['usage_limit'] = $data['max_use'];
-        $data['starts_at'] = $data['start_date'];
-        $data['ends_at'] = $data['end_date'];
-
-        $coupon->update($data);
+        $coupon->update($request->validated());
 
         return redirect()->back();
     }
@@ -65,11 +52,7 @@ class CouponsController extends Controller
 
     public function toggleStatus(Coupons $coupon): RedirectResponse
     {
-        $nextStatus = ! $coupon->status;
-        $coupon->update([
-            'status' => $nextStatus,
-            'is_active' => $nextStatus,
-        ]);
+        $coupon->update(['is_active' => ! $coupon->is_active]);
 
         return redirect()->back();
     }

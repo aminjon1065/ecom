@@ -2,12 +2,14 @@
 
 namespace App\Http\Controllers\Vendor;
 
+use App\Enums\OrderStatus;
 use App\Http\Controllers\Controller;
 use App\Models\Order;
 use App\Models\Product;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\Rules\Enum;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -18,13 +20,13 @@ class VendorOrderController extends Controller
         $vendor = Auth::user()->vendor;
         $productIds = Product::where('vendor_id', $vendor->id)->pluck('id');
 
-        $query = Order::whereHas('products', fn($q) => $q->whereIn('product_id', $productIds))
+        $query = Order::whereHas('products', fn ($q) => $q->whereIn('product_id', $productIds))
             ->with('user:id,name,email');
 
         if ($search = $request->input('search')) {
             $query->where(function ($q) use ($search) {
                 $q->where('invoice_id', 'like', "%{$search}%")
-                    ->orWhereHas('user', fn($uq) => $uq->where('name', 'like', "%{$search}%"));
+                    ->orWhereHas('user', fn ($uq) => $uq->where('name', 'like', "%{$search}%"));
             });
         }
 
@@ -52,7 +54,7 @@ class VendorOrderController extends Controller
         // Only show order products that belong to this vendor
         $order->load([
             'user:id,name,email',
-            'products' => fn($q) => $q->whereIn('product_id', $productIds),
+            'products' => fn ($q) => $q->whereIn('product_id', $productIds),
             'products.product:id,name,thumb_image,price',
         ]);
 
@@ -72,11 +74,11 @@ class VendorOrderController extends Controller
             403
         );
 
-        $validated = $request->validate([
-            'order_status' => 'required|in:pending,processing,shipped,delivered,cancelled',
+        $request->validate([
+            'order_status' => ['required', new Enum(OrderStatus::class)],
         ]);
 
-        $order->update($validated);
+        $order->update(['order_status' => OrderStatus::from($request->order_status)]);
 
         return redirect()->back();
     }

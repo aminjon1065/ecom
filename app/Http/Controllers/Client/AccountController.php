@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Client;
 
+use App\Enums\OrderStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Client\AccountOrderIndexRequest;
 use App\Models\Cart;
@@ -14,6 +15,8 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\Rules\Password;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -171,7 +174,7 @@ class AccountController extends Controller
     {
         abort_unless($order->user_id === Auth::id(), 403);
 
-        if (! in_array($order->order_status, ['pending', 'processing'], true)) {
+        if (! in_array($order->order_status, [OrderStatus::Pending, OrderStatus::Processing], true)) {
             return redirect()->back()
                 ->with('warning', 'Этот заказ уже нельзя отменить.');
         }
@@ -191,7 +194,7 @@ class AccountController extends Controller
             }
 
             $order->update([
-                'order_status' => 'cancelled',
+                'order_status' => OrderStatus::Cancelled,
             ]);
         });
 
@@ -224,7 +227,14 @@ class AccountController extends Controller
 
     public function profile(): Response
     {
-        return Inertia::render('client/account/profile');
+        $user = Auth::user();
+
+        $isSocialOnly = ($user->telegram_id || $user->google_id)
+            && str_ends_with($user->email, '@telegram.local');
+
+        return Inertia::render('client/account/profile', [
+            'isSocialOnly' => $isSocialOnly,
+        ]);
     }
 
     public function updateProfile(Request $request): RedirectResponse
@@ -237,5 +247,31 @@ class AccountController extends Controller
         Auth::user()->update($validated);
 
         return redirect()->back();
+    }
+
+    public function updatePassword(Request $request): RedirectResponse
+    {
+        $user = Auth::user();
+
+        $isSocialOnly = ($user->telegram_id || $user->google_id)
+            && str_ends_with($user->email, '@telegram.local');
+
+        $rules = [
+            'password' => ['required', 'string', Password::min(8), 'confirmed'],
+        ];
+
+        if (! $isSocialOnly) {
+            $rules['current_password'] = ['required', 'string', 'current_password:web'];
+        }
+
+        $request->validate($rules, [
+            'current_password.current_password' => 'Текущий пароль указан неверно.',
+        ]);
+
+        $user->forceFill([
+            'password' => Hash::make($request->input('password')),
+        ])->save();
+
+        return redirect()->back()->with('success', 'Пароль успешно изменён.');
     }
 }

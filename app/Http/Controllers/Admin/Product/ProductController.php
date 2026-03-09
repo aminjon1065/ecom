@@ -10,6 +10,7 @@ use App\Models\Category;
 use App\Models\ChildCategory;
 use App\Models\Product;
 use App\Models\SubCategory;
+use App\Services\ImageService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
@@ -18,6 +19,10 @@ use Inertia\Inertia;
 
 class ProductController extends Controller
 {
+    public function __construct(
+        private readonly ImageService $imageService,
+    ) {}
+
     public function index(Request $request): \Inertia\Response
     {
         $selectColumns = [
@@ -136,15 +141,16 @@ class ProductController extends Controller
 
         // THUMB
         if ($request->hasFile('thumb_image')) {
-            $data['thumb_image'] = $request->file('thumb_image')
-                ->store('products/thumbs', 'public');
+            $data['thumb_image'] = $this->imageService->storeThumb(
+                $request->file('thumb_image'), 'products/thumbs'
+            );
         }
         $data['slug'] = Str::slug($data['name']);
 
         // GALLERY
         if ($request->hasFile('gallery')) {
             $data['gallery'] = collect($request->file('gallery'))
-                ->map(fn ($file) => $file->store('products/gallery', 'public'))
+                ->map(fn ($file) => $this->imageService->storeOptimized($file, 'products/gallery', 800))
                 ->toArray();
         }
 
@@ -173,8 +179,9 @@ class ProductController extends Controller
             if ($product->thumb_image) {
                 Storage::disk('public')->delete($product->thumb_image);
             }
-            $data['thumb_image'] = $request->file('thumb_image')
-                ->store('products/thumbs', 'public');
+            $data['thumb_image'] = $this->imageService->storeThumb(
+                $request->file('thumb_image'), 'products/thumbs'
+            );
         } else {
             unset($data['thumb_image']);
         }
@@ -185,7 +192,7 @@ class ProductController extends Controller
         // GALLERY
         if ($request->hasFile('gallery')) {
             $data['gallery'] = collect($request->file('gallery'))
-                ->map(fn ($file) => $file->store('products/gallery', 'public'))
+                ->map(fn ($file) => $this->imageService->storeOptimized($file, 'products/gallery', 800))
                 ->toArray();
         }
 

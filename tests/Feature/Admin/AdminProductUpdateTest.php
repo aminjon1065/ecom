@@ -58,7 +58,7 @@ it('updates product with plain text long description from admin panel', function
         'offer_price' => 99.99,
         'offer_start_date' => now()->toDateString(),
         'offer_end_date' => now()->addDays(2)->toDateString(),
-        'product_type' => 'Топ',
+        'product_type' => 'top',
         'status' => true,
         'is_approved' => true,
         'seo_title' => 'Legacy title',
@@ -83,7 +83,7 @@ it('updates product with plain text long description from admin panel', function
         'long_description' => 'Still plain text description',
         'seo_title' => 'Updated SEO title',
         'seo_description' => 'Updated SEO description',
-        'product_type' => 'Топ',
+        'product_type' => 'top',
         'status' => true,
         'is_approved' => true,
     ]);

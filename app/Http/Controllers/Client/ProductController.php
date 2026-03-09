@@ -130,6 +130,10 @@ class ProductController extends Controller
                 ->exists();
         }
 
+        $effectivePrice = ($product->offer_price && $product->offer_start_date && $product->offer_end_date && now()->between($product->offer_start_date, $product->offer_end_date))
+            ? (float) $product->offer_price
+            : (float) $product->price;
+
         return Inertia::render('client/products/show', [
             'product' => $product,
             'reviews' => $reviews,
@@ -141,6 +145,16 @@ class ProductController extends Controller
             'isInWishlist' => $isInWishlist,
             'isInCart' => $isInCart,
             'deliveryEstimate' => $this->resolveDeliveryEstimate((int) $product->qty),
+            'seo' => [
+                'title' => $product->seo_title ?: $product->name,
+                'description' => $product->seo_description ?: $product->short_description,
+                'image' => $product->thumb_image ? asset('storage/'.$product->thumb_image) : null,
+                'price' => $effectivePrice,
+                'currency' => 'KGS',
+                'availability' => $product->qty > 0 ? 'InStock' : 'OutOfStock',
+                'sku' => $product->sku,
+                'brand' => $product->brand?->name,
+            ],
         ]);
     }
 

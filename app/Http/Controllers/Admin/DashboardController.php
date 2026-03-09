@@ -11,9 +11,12 @@ use App\Models\ProductReview;
 use App\Models\ProductViewEvent;
 use App\Models\User;
 use App\Models\Vendor;
+use App\Notifications\VendorApprovedNotification;
+use App\Notifications\VendorRejectedNotification;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Inertia\Inertia;
@@ -153,6 +156,8 @@ class DashboardController extends Controller
                 return $item;
             });
 
+        $healthStatus = $this->checkHealth();
+
         return Inertia::render('admin/dashboard', [
             'statistics' => $statistics,
             'orderStats' => $orderStats,
@@ -165,7 +170,35 @@ class DashboardController extends Controller
             'metricsPeriod' => $period,
             'funnelMetrics' => $funnelMetrics,
             'topProducts' => $topProducts,
+            'healthStatus' => $healthStatus,
         ]);
+    }
+
+    /**
+     * @return array{status: string, db: bool, cache: bool}
+     */
+    private function checkHealth(): array
+    {
+        $db = false;
+        $cache = false;
+
+        try {
+            DB::connection()->getPdo();
+            $db = true;
+        } catch (\Throwable) {
+        }
+
+        try {
+            Cache::store()->put('health_check', true, 10);
+            $cache = (bool) Cache::store()->get('health_check', false);
+        } catch (\Throwable) {
+        }
+
+        return [
+            'status' => ($db && $cache) ? 'ok' : 'degraded',
+            'db' => $db,
+            'cache' => $cache,
+        ];
     }
 
     private function resolvePeriodStart(string $period): ?Carbon
@@ -182,6 +215,8 @@ class DashboardController extends Controller
     {
         $vendor->update(['status' => true]);
 
+        $vendor->user->notify(new VendorApprovedNotification($vendor));
+
         Log::info('Admin approved vendor', [
             'admin_id' => Auth::id(),
             'vendor_id' => $vendor->id,
@@ -193,6 +228,8 @@ class DashboardController extends Controller
 
     public function rejectVendor(Vendor $vendor): RedirectResponse
     {
+        $vendor->user->notify(new VendorRejectedNotification($vendor));
+
         Log::warning('Admin rejected (deleted) vendor', [
             'admin_id' => Auth::id(),
             'vendor_id' => $vendor->id,

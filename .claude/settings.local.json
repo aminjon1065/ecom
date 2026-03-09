@@ -16,7 +16,17 @@
       "Bash(vendor/bin/pint:*)",
       "mcp__jetbrains__list_directory_tree",
       "Bash(xargs -I {} basename {})",
-      "Bash(wc -l /Users/aminjon/Herd/ecom/tests/Feature/**/*.php)"
+      "Bash(wc -l /Users/aminjon/Herd/ecom/tests/Feature/**/*.php)",
+      "mcp__jetbrains__replace_text_in_file",
+      "mcp__laravel-boost__list-routes",
+      "Bash(composer show)",
+      "Bash(php -r \"echo extension_loaded\\(''gd''\\) ? ''gd ok'' : ''no gd''; echo '' | ''; echo extension_loaded\\(''imagick''\\) ? ''imagick ok'' : ''no imagick'';\")",
+      "mcp__laravel-boost__search-docs",
+      "mcp__laravel-boost__last-error",
+      "mcp__laravel-boost__database-query",
+      "Bash(npm run build)",
+      "mcp__laravel-boost__get-config",
+      "mcp__laravel-boost__get-absolute-url"
     ]
   }
 }

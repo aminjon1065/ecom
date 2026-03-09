@@ -7,6 +7,7 @@ use App\Models\Category;
 use App\Models\SubCategory;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Inertia\Inertia;
 use Str;
 
@@ -18,6 +19,7 @@ class SubCategoryController extends Controller
             ->latest()
             ->paginate(10);
         $categories = Category::select('id', 'name')->get();
+
         return Inertia::render('admin/sub-category/all-sub-category', [
             'subCategories' => $subCategories,
             'categories' => $categories,
@@ -40,10 +42,10 @@ class SubCategoryController extends Controller
         $data['status'] = $data['status'] ?? true;
 
         SubCategory::create($data);
+        Cache::forget('categories_menu');
 
         return redirect()->back();
     }
-
 
     public function update(Request $request, SubCategory $subCategory): RedirectResponse
     {
@@ -54,6 +56,7 @@ class SubCategoryController extends Controller
         ]);
 
         $subCategory->update($data);
+        Cache::forget('categories_menu');
 
         return redirect()->back();
     }
@@ -61,15 +64,18 @@ class SubCategoryController extends Controller
     public function toggleStatus(SubCategory $subCategory): RedirectResponse
     {
         $subCategory->update([
-            'status' => !$subCategory->status,
+            'status' => ! $subCategory->status,
         ]);
+        Cache::forget('categories_menu');
+
         return redirect()->back();
     }
 
     public function destroy(SubCategory $subCategory): RedirectResponse
     {
         $subCategory->delete();
+        Cache::forget('categories_menu');
+
         return redirect()->back()->with('success', 'Подкатегория удалена.');
     }
-
 }

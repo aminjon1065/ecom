@@ -209,18 +209,8 @@
                 <tr>
                     <td class="info-label">Статус заказа:</td>
                     <td>
-                        @php
-                            $statusLabels = [
-                                'pending' => 'В обработке',
-                                'processing' => 'Обрабатывается',
-                                'shipped' => 'Отправлен',
-                                'delivered' => 'Доставлен',
-                                'cancelled' => 'Отменен',
-                            ];
-                            $statusClass = 'status-' . $order->order_status;
-                        @endphp
-                        <span class="status-badge {{ $statusClass }}">
-                            {{ $statusLabels[$order->order_status] ?? $order->order_status }}
+                        <span class="status-badge status-{{ $order->order_status->value }}">
+                            {{ $order->order_status->label() }}
                         </span>
                     </td>
                 </tr>

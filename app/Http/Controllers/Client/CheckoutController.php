@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Client;
 
+use App\Enums\OrderStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Checkout\ApplyCouponRequest;
 use App\Http\Requests\Checkout\StoreCheckoutRequest;
@@ -251,7 +252,7 @@ class CheckoutController extends Controller
                     'payment_status' => false,
                     'coupon' => $couponCode,
                     'coupon_code' => $couponCode,
-                    'order_status' => 'pending',
+                    'order_status' => OrderStatus::Pending,
                 ]);
 
                 $distributedDiscount = 0.0;

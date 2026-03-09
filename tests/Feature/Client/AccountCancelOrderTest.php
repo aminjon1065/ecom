@@ -1,5 +1,6 @@
 <?php
 
+use App\Enums\OrderStatus;
 use App\Models\Brand;
 use App\Models\Category;
 use App\Models\Order;
@@ -44,7 +45,7 @@ it('allows user to cancel own pending order and restores stock', function () {
 
     $response->assertRedirect();
 
-    expect($order->fresh()->order_status)->toBe('cancelled')
+    expect($order->fresh()->order_status)->toBe(OrderStatus::Cancelled)
         ->and($product->fresh()->qty)->toBe(5);
 });
 
@@ -110,7 +111,7 @@ it('does not cancel delivered order', function () {
 
     $response->assertRedirect();
 
-    expect($order->fresh()->order_status)->toBe('delivered')
+    expect($order->fresh()->order_status)->toBe(OrderStatus::Delivered)
         ->and($product->fresh()->qty)->toBe(7);
 });
 
