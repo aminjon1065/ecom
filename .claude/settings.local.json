@@ -13,7 +13,10 @@
       "Bash(npx tsc:*)",
       "mcp__laravel-boost__tinker",
       "mcp__laravel-boost__database-schema",
-      "Bash(vendor/bin/pint:*)"
+      "Bash(vendor/bin/pint:*)",
+      "mcp__jetbrains__list_directory_tree",
+      "Bash(xargs -I {} basename {})",
+      "Bash(wc -l /Users/aminjon/Herd/ecom/tests/Feature/**/*.php)"
     ]
   }
 }

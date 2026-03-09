@@ -255,6 +255,32 @@ it('keeps filters when paginating products', function () {
     );
 });
 
+it('does not fail product listing search for legacy product type values', function () {
+    $category = createCategory('Legacy category');
+    $brand = createBrand('Legacy brand');
+
+    $legacyProduct = createProduct([
+        'name' => 'Legacy Search Product',
+        'slug' => 'legacy-search-product',
+        'code' => 1401,
+        'category_id' => $category->id,
+        'brand_id' => $brand->id,
+        'product_type' => 'new_arrival',
+    ]);
+
+    $response = $this->get(route('products.index', [
+        'search' => 'Legacy Search',
+    ]));
+
+    $response->assertSuccessful();
+
+    $response->assertInertia(fn (Assert $page) => $page
+        ->component('client/products/index')
+        ->has('products', 1)
+        ->where('products.0.id', $legacyProduct->id)
+    );
+});
+
 it('validates max price is not lower than min price on product listing filters', function () {
     $response = $this->get(route('products.index', [
         'min_price' => '100',
