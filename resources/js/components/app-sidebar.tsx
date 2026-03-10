@@ -133,6 +133,10 @@ const mainMenu: NavItem[] = [
                 title: 'Слайдер',
                 href: slider.index(),
             },
+            {
+                title: 'Блоки главной',
+                href: '/admin/home-page-sections',
+            },
         ],
     },
     {

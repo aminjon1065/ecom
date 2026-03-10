@@ -8,6 +8,7 @@ use App\Http\Controllers\Admin\Category\SubCategoryController;
 use App\Http\Controllers\Admin\CouponsController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\FlashSaleController;
+use App\Http\Controllers\Admin\HomePageSectionController;
 use App\Http\Controllers\Admin\ImportProductsController;
 use App\Http\Controllers\Admin\Order\OrderController;
 use App\Http\Controllers\Admin\PopularSearchQueryController;
@@ -99,6 +100,8 @@ Route::post('slider', [SliderController::class, 'store'])->name('slider.store');
 Route::put('slider/{slider}', [SliderController::class, 'update'])->name('slider.update');
 Route::patch('slider/{slider}/status', [SliderController::class, 'toggleStatus'])->name('slider.toggle-status');
 Route::delete('slider/{slider}', [SliderController::class, 'destroy'])->name('slider.destroy');
+Route::get('home-page-sections', [HomePageSectionController::class, 'index'])->name('home-page-section.index');
+Route::put('home-page-sections', [HomePageSectionController::class, 'update'])->name('home-page-section.update');
 
 // Пользователи
 Route::get('user', [UserController::class, 'index'])->name('user.index');
