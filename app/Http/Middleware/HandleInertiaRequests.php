@@ -53,6 +53,7 @@ class HandleInertiaRequests extends Middleware
 
             'flash' => [
                 'appliedCoupon' => $request->session()->get('appliedCoupon'),
+                'success' => $request->session()->get('success'),
             ],
 
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',

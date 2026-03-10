@@ -3,7 +3,8 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import AppHeaderLayout from '@/layouts/app/client/app-header-layout';
-import { Head, Link, router } from '@inertiajs/react';
+import newsletter from '@/routes/newsletter';
+import { Head, Link, useForm, usePage } from '@inertiajs/react';
 import {
     ArrowRight,
     ChevronLeft,
@@ -251,19 +252,25 @@ function ProductSection({
 }
 
 function NewsletterSection() {
-    const [email, setEmail] = useState('');
+    const { flash } = usePage<{ flash?: { success?: string | null } }>().props;
+    const { data, setData, post, processing, errors, clearErrors, reset } =
+        useForm({
+            email: '',
+        });
     const [submitted, setSubmitted] = useState(false);
 
     const handleSubmit = (event: React.FormEvent) => {
         event.preventDefault();
 
-        router.post(
-            '/newsletter',
-            { email },
+        post(
+            newsletter.store().url,
             {
                 preserveScroll: true,
+                onStart: () => {
+                    setSubmitted(false);
+                },
                 onSuccess: () => {
-                    setEmail('');
+                    reset('email');
                     setSubmitted(true);
                 },
             },
@@ -278,25 +285,40 @@ function NewsletterSection() {
             <p className="mb-4 text-sm text-muted-foreground">
                 Получайте уведомления о скидках и новинках
             </p>
-            {submitted ? (
-                <p className="text-sm text-green-600">
-                    Вы успешно подписались!
+            {(submitted || flash?.success) && (
+                <p className="mb-3 text-sm text-green-600">
+                    {flash?.success ??
+                        'Мы отправили письмо со ссылкой для подтверждения подписки.'}
                 </p>
-            ) : (
-                <form
-                    onSubmit={handleSubmit}
-                    className="mx-auto flex max-w-md gap-2"
-                >
-                    <Input
-                        type="email"
-                        placeholder="Ваш email..."
-                        value={email}
-                        onChange={(event) => setEmail(event.target.value)}
-                        required
-                    />
-                    <Button type="submit">Подписаться</Button>
-                </form>
             )}
+            {errors.email && (
+                <p className="mb-3 text-sm text-destructive">
+                    {errors.email}
+                </p>
+            )}
+            <form
+                onSubmit={handleSubmit}
+                className="mx-auto flex max-w-md gap-2"
+            >
+                <Input
+                    type="email"
+                    inputMode="email"
+                    autoComplete="email"
+                    placeholder="Ваш email..."
+                    value={data.email}
+                    onChange={(event) => {
+                        setData('email', event.target.value);
+                        clearErrors('email');
+                    }}
+                    required
+                />
+                <Button type="submit" disabled={processing}>
+                    {processing ? 'Отправка...' : 'Подписаться'}
+                </Button>
+            </form>
+            <p className="mt-3 text-xs text-muted-foreground">
+                После отправки нужно подтвердить email по ссылке из письма.
+            </p>
         </section>
     );
 }

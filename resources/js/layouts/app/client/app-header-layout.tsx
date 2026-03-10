@@ -193,28 +193,28 @@ const AppHeaderLayout = ({ children }: AppHeaderLayoutProps) => {
                             <h3 className="mb-3 font-semibold">Информация</h3>
                             <ul className="space-y-2 text-sm text-muted-foreground">
                                 <li>
-                                    <a
-                                        href="#"
+                                    <Link
+                                        href="/delivery"
                                         className="hover:text-foreground"
                                     >
                                         Доставка
-                                    </a>
+                                    </Link>
                                 </li>
                                 <li>
-                                    <a
-                                        href="#"
+                                    <Link
+                                        href="/payment"
                                         className="hover:text-foreground"
                                     >
                                         Оплата
-                                    </a>
+                                    </Link>
                                 </li>
                                 <li>
-                                    <a
-                                        href="#"
+                                    <Link
+                                        href="/returns"
                                         className="hover:text-foreground"
                                     >
                                         Возврат
-                                    </a>
+                                    </Link>
                                 </li>
                                 <li>
                                     <Link
@@ -241,7 +241,7 @@ const AppHeaderLayout = ({ children }: AppHeaderLayoutProps) => {
                         </div>
 
                         <div className="mt-8 border-t pt-6 text-center text-sm text-muted-foreground">
-                            <a href="https://t.me/error_syntax">Techdev</a>
+                            <a href="https://t.me/error_syntax">Разработал aMiNjOn</a>
                         </div>
                     </div>
                 </div>

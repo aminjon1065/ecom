@@ -2,7 +2,7 @@ import { Button } from '@/components/ui/button';
 import type { SharedData } from '@/types';
 import { Link, usePage } from '@inertiajs/react';
 import { ChevronRight, LayoutGrid } from 'lucide-react';
-import { ImgHTMLAttributes, useState } from 'react';
+import { ImgHTMLAttributes, useEffect, useRef, useState } from 'react';
 
 interface ChildCategory {
     id: number;
@@ -31,18 +31,53 @@ export function NavMain() {
     >().props;
     const [open, setOpen] = useState(false);
     const [activeCategory, setActiveCategory] = useState<Category | null>(null);
+    const containerRef = useRef<HTMLDivElement | null>(null);
 
     const cats = categoriesMenu || [];
+
+    useEffect(() => {
+        if (!open) {
+            return;
+        }
+
+        const handlePointerDown = (event: MouseEvent) => {
+            if (!containerRef.current) {
+                return;
+            }
+
+            if (!containerRef.current.contains(event.target as Node)) {
+                setOpen(false);
+                setActiveCategory(null);
+            }
+        };
+
+        document.addEventListener('mousedown', handlePointerDown);
+
+        return () => {
+            document.removeEventListener('mousedown', handlePointerDown);
+        };
+    }, [open]);
 
     return (
         <>
             {/* Desktop Mega Menu */}
-            <div className="relative hidden md:block">
+            <div ref={containerRef} className="relative hidden md:block">
                 <Button
                     variant="ghost"
                     className="gap-2 font-medium"
-                    onMouseEnter={() => setOpen(true)}
-                    onClick={() => setOpen(!open)}
+                    aria-expanded={open}
+                    aria-haspopup="menu"
+                    onClick={() => {
+                        if (open) {
+                            setOpen(false);
+                            setActiveCategory(null);
+
+                            return;
+                        }
+
+                        setOpen(true);
+                        setActiveCategory(cats[0] ?? null);
+                    }}
                 >
                     <LayoutGrid className="h-4 w-4" />
                     Каталог
@@ -50,23 +85,8 @@ export function NavMain() {
 
                 {open && (
                     <>
-                        {/* Backdrop */}
-                        <div
-                            className="fixed inset-0 z-40"
-                            onClick={() => {
-                                setOpen(false);
-                                setActiveCategory(null);
-                            }}
-                        />
-
                         {/* Menu panel */}
-                        <div
-                            className="absolute top-full left-0 z-50 flex rounded-lg border bg-popover shadow-xl"
-                            onMouseLeave={() => {
-                                setOpen(false);
-                                setActiveCategory(null);
-                            }}
-                        >
+                        <div className="absolute top-full left-0 z-50 flex rounded-lg border bg-popover shadow-xl">
                             {/* Left: categories list */}
                             <div className="w-64 border-r py-2">
                                 <div className="mb-1 px-4 py-1.5">
@@ -79,38 +99,53 @@ export function NavMain() {
                                     </Link>
                                 </div>
                                 {cats.map((cat) => (
-                                    <div
-                                        key={cat.id}
-                                        className={`flex cursor-pointer items-center justify-between px-4 py-2 text-sm transition-colors hover:bg-accent ${
-                                            activeCategory?.id === cat.id
-                                                ? 'bg-accent font-medium'
-                                                : ''
-                                        }`}
-                                        onMouseEnter={() =>
-                                            setActiveCategory(cat)
-                                        }
-                                        onClick={() => {
-                                            if (!cat.sub_categories?.length) {
-                                                setOpen(false);
+                                    cat.sub_categories?.length > 0 ? (
+                                        <button
+                                            key={cat.id}
+                                            type="button"
+                                            className={`flex w-full items-center justify-between px-4 py-2 text-left text-sm transition-colors hover:bg-accent ${
+                                                activeCategory?.id === cat.id
+                                                    ? 'bg-accent font-medium'
+                                                    : ''
+                                            }`}
+                                            onMouseEnter={() =>
+                                                setActiveCategory(cat)
                                             }
-                                        }}
-                                    >
+                                            onClick={() =>
+                                                setActiveCategory(cat)
+                                            }
+                                        >
+                                            <span className="flex flex-1 items-center gap-2">
+                                                <img
+                                                    src={`/${cat.icon}`}
+                                                    alt={cat.name}
+                                                    className="h-6 w-6"
+                                                />
+                                                <span>{cat.name}</span>
+                                            </span>
+                                            <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
+                                        </button>
+                                    ) : (
                                         <Link
+                                            key={cat.id}
                                             href={`/products?category=${cat.id}`}
                                             onClick={() => setOpen(false)}
-                                            className="flex flex-1 items-center gap-2"
+                                            className={`flex items-center justify-between px-4 py-2 text-sm transition-colors hover:bg-accent ${
+                                                activeCategory?.id === cat.id
+                                                    ? 'bg-accent font-medium'
+                                                    : ''
+                                            }`}
                                         >
-                                            <img
-                                                src={`/${cat.icon}`}
-                                                alt={cat.name}
-                                                className={"w-6 h-6"}
-                                            />
-                                            <span>{cat.name}</span>
+                                            <span className="flex flex-1 items-center gap-2">
+                                                <img
+                                                    src={`/${cat.icon}`}
+                                                    alt={cat.name}
+                                                    className="h-6 w-6"
+                                                />
+                                                <span>{cat.name}</span>
+                                            </span>
                                         </Link>
-                                        {cat.sub_categories?.length > 0 && (
-                                            <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
-                                        )}
-                                    </div>
+                                    )
                                 ))}
                             </div>
 

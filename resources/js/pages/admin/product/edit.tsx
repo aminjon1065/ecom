@@ -67,11 +67,27 @@ interface Props {
 }
 
 const productTypes = [
-    { name: 'Топ' },
-    { name: 'Рекомендуемый' },
-    { name: 'Новый' },
-    { name: 'Лучший' },
+    { value: 'top', label: 'Топ' },
+    { value: 'recommended', label: 'Рекомендуемый' },
+    { value: 'new', label: 'Новый' },
+    { value: 'best', label: 'Лучший' },
 ];
+
+function normalizeProductType(value: string | null): string {
+    return (
+        {
+            top: 'top',
+            recommended: 'recommended',
+            new: 'new',
+            best: 'best',
+            'Топ': 'top',
+            'Рекомендуемый': 'recommended',
+            'Новый': 'new',
+            'Лучший': 'best',
+            new_arrival: 'new',
+        }[value ?? ''] ?? 'top'
+    );
+}
 
 export default function AdminEditProduct({
     product,
@@ -118,7 +134,7 @@ export default function AdminEditProduct({
         second_source_link: product.second_source_link ?? '',
         seo_title: product.seo_title ?? '',
         seo_description: product.seo_description ?? '',
-        product_type: product.product_type ?? 'Топ',
+        product_type: normalizeProductType(product.product_type),
         status: product.status,
         is_approved: product.is_approved,
     });
@@ -158,6 +174,12 @@ export default function AdminEditProduct({
                 onSubmit={submit}
                 className="mx-auto w-full max-w-10/12 space-y-8"
             >
+                {Object.keys(errors).length > 0 && (
+                    <div className="rounded-md border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+                        Проверьте форму: есть ошибки валидации.
+                    </div>
+                )}
+
                 {/* BASIC */}
                 <Card>
                     <CardHeader>
@@ -356,19 +378,24 @@ export default function AdminEditProduct({
                                 }
                             >
                                 <SelectTrigger className="w-full">
-                                    <SelectValue />
+                                <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
                                     {productTypes.map((t) => (
                                         <SelectItem
-                                            key={t.name}
-                                            value={t.name}
+                                            key={t.value}
+                                            value={t.value}
                                         >
-                                            {t.name}
+                                            {t.label}
                                         </SelectItem>
                                     ))}
                                 </SelectContent>
                             </Select>
+                            {errors.product_type && (
+                                <p className="text-xs text-destructive">
+                                    {errors.product_type}
+                                </p>
+                            )}
                         </div>
                     </CardContent>
                 </Card>

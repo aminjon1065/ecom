@@ -5,6 +5,7 @@ use App\Models\Category;
 use App\Models\Product;
 use App\Models\ProductReview;
 use App\Models\User;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Inertia\Testing\AssertableInertia as Assert;
 
@@ -278,6 +279,42 @@ it('does not fail product listing search for product with null product type', fu
         ->component('client/products/index')
         ->has('products', 1)
         ->where('products.0.id', $legacyProduct->id)
+    );
+});
+
+it('does not fail product listing for product with legacy new arrival product type', function () {
+    $category = createCategory('Legacy enum category');
+    $brand = createBrand('Legacy enum brand');
+
+    DB::table('products')->insert([
+        'name' => 'Legacy New Arrival Product',
+        'code' => 1451,
+        'slug' => 'legacy-new-arrival-product',
+        'thumb_image' => 'products/thumb.png',
+        'category_id' => $category->id,
+        'brand_id' => $brand->id,
+        'qty' => 3,
+        'short_description' => 'Short description',
+        'long_description' => 'Long description',
+        'price' => 99,
+        'product_type' => 'new_arrival',
+        'status' => true,
+        'is_approved' => true,
+        'created_at' => now(),
+        'updated_at' => now(),
+    ]);
+
+    $response = $this->get(route('products.index', [
+        'category' => (string) $category->id,
+    ]));
+
+    $response->assertSuccessful();
+
+    $response->assertInertia(fn (Assert $page) => $page
+        ->component('client/products/index')
+        ->where('productsMeta.total', 1)
+        ->has('products', 1)
+        ->where('products.0.slug', 'legacy-new-arrival-product')
     );
 });
 

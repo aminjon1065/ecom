@@ -13,6 +13,7 @@ use App\Http\Controllers\Client\ProductController;
 use App\Http\Controllers\Client\UserAddressController;
 use App\Http\Controllers\Client\WishlistController;
 use Illuminate\Support\Facades\Route;
+use Inertia\Inertia;
 
 // Telegram auth (guest only)
 Route::middleware('guest')->group(function () {
@@ -39,6 +40,89 @@ Route::middleware('guest')->group(function () {
 Route::get('/products', [ProductController::class, 'index'])->name('products.index');
 Route::get('/products/{slug}', [ProductController::class, 'show'])->name('products.show');
 Route::post('/newsletter', [NewsletterSubscriberController::class, 'store'])->name('newsletter.store');
+Route::get('/newsletter/verify/{token}', [NewsletterSubscriberController::class, 'verify'])->name('newsletter.verify');
+Route::get('/delivery', fn () => Inertia::render('client/info/show', [
+    'title' => 'Доставка',
+    'description' => 'Условия доставки и сроки получения заказов.',
+    'sections' => [
+        [
+            'title' => 'Сроки доставки',
+            'items' => [
+                'По городу заказы обычно доставляются в течение 1-2 дней.',
+                'По регионам сроки зависят от адреса и выбранной службы доставки.',
+                'После оформления заказа менеджер связывается для подтверждения деталей.',
+            ],
+        ],
+        [
+            'title' => 'Стоимость доставки',
+            'items' => [
+                'Стоимость рассчитывается при оформлении заказа.',
+                'Финальная сумма зависит от адреса, веса и выбранного способа доставки.',
+            ],
+        ],
+        [
+            'title' => 'Получение заказа',
+            'items' => [
+                'Перед отправкой мы проверяем комплектность и состояние товара.',
+                'При получении рекомендуем проверить упаковку и сам товар.',
+            ],
+        ],
+    ],
+]))->name('info.delivery');
+Route::get('/payment', fn () => Inertia::render('client/info/show', [
+    'title' => 'Оплата',
+    'description' => 'Доступные способы оплаты и порядок подтверждения платежа.',
+    'sections' => [
+        [
+            'title' => 'Способы оплаты',
+            'items' => [
+                'Оплата доступна наличными при получении или банковской картой.',
+                'Доступные способы оплаты зависят от выбранного способа доставки.',
+            ],
+        ],
+        [
+            'title' => 'Подтверждение платежа',
+            'items' => [
+                'После успешной оплаты статус заказа обновляется в личном кабинете.',
+                'Если платёж не прошёл, вы сможете повторить оформление заказа.',
+            ],
+        ],
+        [
+            'title' => 'Безопасность',
+            'items' => [
+                'Мы не храним данные банковских карт в интерфейсе магазина.',
+                'Для вопросов по оплате можно обратиться в поддержку магазина.',
+            ],
+        ],
+    ],
+]))->name('info.payment');
+Route::get('/returns', fn () => Inertia::render('client/info/show', [
+    'title' => 'Возврат',
+    'description' => 'Порядок возврата товара и условия обращения.',
+    'sections' => [
+        [
+            'title' => 'Условия возврата',
+            'items' => [
+                'Возврат возможен в рамках правил магазина и действующего законодательства.',
+                'Товар должен сохранить товарный вид, комплектность и документы о покупке.',
+            ],
+        ],
+        [
+            'title' => 'Как оформить возврат',
+            'items' => [
+                'Свяжитесь с поддержкой и сообщите номер заказа.',
+                'Мы уточним статус заявки и дальнейшие шаги по возврату товара.',
+            ],
+        ],
+        [
+            'title' => 'Сроки рассмотрения',
+            'items' => [
+                'Срок обработки зависит от причины обращения и состояния товара.',
+                'После подтверждения возврата мы сообщим дальнейший порядок компенсации.',
+            ],
+        ],
+    ],
+]))->name('info.returns');
 Route::get('/track-order', [OrderTrackingController::class, 'index'])->name('track-order');
 Route::get('/api/search', [ProductController::class, 'search'])->name('api.search');
 Route::get('/api/search/popular', [ProductController::class, 'popularSearches'])->name('api.search.popular');

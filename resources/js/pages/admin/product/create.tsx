@@ -38,10 +38,10 @@ interface Props {
 }
 
 const productTypes = [
-    { name: 'Топ' },
-    { name: 'Рекомендуемый' },
-    { name: 'Новый' },
-    { name: 'Лучший' },
+    { value: 'top', label: 'Топ' },
+    { value: 'recommended', label: 'Рекомендуемый' },
+    { value: 'new', label: 'Новый' },
+    { value: 'best', label: 'Лучший' },
 ];
 
 export default function CreateProduct({
@@ -51,7 +51,7 @@ export default function CreateProduct({
     brands,
 }: Props) {
     const [thumbPreview, setThumbPreview] = useState<string | null>(null);
-    const { data, setData, post, processing } = useForm({
+    const { data, setData, post, processing, errors } = useForm({
         name: '',
         code: 0,
         thumb_image: null as File | null,
@@ -76,7 +76,7 @@ export default function CreateProduct({
         seo_description: '',
         is_approved: true,
         status: true,
-        product_type: 'Топ',
+        product_type: 'top',
     });
     useEffect(() => {
         return () => {
@@ -112,6 +112,12 @@ export default function CreateProduct({
                 onSubmit={submit}
                 className="mx-auto w-full max-w-10/12 space-y-8"
             >
+                {Object.keys(errors).length > 0 && (
+                    <div className="rounded-md border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+                        Проверьте форму: есть ошибки валидации.
+                    </div>
+                )}
+
                 {/* BASIC */}
                 <Card>
                     <CardHeader>
@@ -278,19 +284,24 @@ export default function CreateProduct({
                                 }
                             >
                                 <SelectTrigger className={'w-full'}>
-                                    <SelectValue placeholder="Топ" />
+                                    <SelectValue placeholder="Тип продукта" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    {productTypes.map((b) => (
+                                    {productTypes.map((productType) => (
                                         <SelectItem
-                                            key={b.name}
-                                            value={String(b.name)}
+                                            key={productType.value}
+                                            value={productType.value}
                                         >
-                                            {b.name}
+                                            {productType.label}
                                         </SelectItem>
                                     ))}
                                 </SelectContent>
                             </Select>
+                            {errors.product_type && (
+                                <p className="text-xs text-destructive">
+                                    {errors.product_type}
+                                </p>
+                            )}
                         </div>
                     </CardContent>
                 </Card>

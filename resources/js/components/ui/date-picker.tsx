@@ -1,5 +1,5 @@
 import * as React from 'react';
-import { format } from 'date-fns';
+import { format, isValid, parseISO } from 'date-fns';
 import { Calendar } from '@/components/ui/calendar';
 import { Button } from '@/components/ui/button';
 import {
@@ -18,6 +18,27 @@ interface DatePickerProps {
     className?: string;
 }
 
+function parseDateValue(value: string): Date | undefined {
+    const normalizedValue = value.trim();
+
+    if (normalizedValue === '') {
+        return undefined;
+    }
+
+    const dateOnlyMatch = normalizedValue.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+
+    if (dateOnlyMatch) {
+        const [, year, month, day] = dateOnlyMatch;
+        const localDate = new Date(Number(year), Number(month) - 1, Number(day));
+
+        return isValid(localDate) ? localDate : undefined;
+    }
+
+    const isoDate = parseISO(normalizedValue);
+
+    return isValid(isoDate) ? isoDate : undefined;
+}
+
 export function DatePicker({
                                value,
                                onChange,
@@ -25,7 +46,7 @@ export function DatePicker({
                                disabled,
                                className,
                            }: DatePickerProps) {
-    const date = value ? new Date(value) : undefined;
+    const date = value ? parseDateValue(value) : undefined;
 
     return (
         <Popover>
@@ -35,11 +56,11 @@ export function DatePicker({
                     disabled={disabled}
                     className={cn(
                         'w-55 justify-between font-normal',
-                        !value && 'text-muted-foreground',
+                        !date && 'text-muted-foreground',
                         className,
                     )}
                 >
-                    {value ? format(date!, 'dd.MM.yyyy') : placeholder}
+                    {date ? format(date, 'dd.MM.yyyy') : placeholder}
                     <ChevronDown className="h-4 w-4 opacity-50" />
                 </Button>
             </PopoverTrigger>
@@ -57,12 +78,7 @@ export function DatePicker({
                             return;
                         }
 
-                        // YYYY-MM-DD
-                        const formatted = d
-                            .toISOString()
-                            .split('T')[0];
-
-                        onChange(formatted);
+                        onChange(format(d, 'yyyy-MM-dd'));
                     }}
                     captionLayout="dropdown"
                     fromYear={2000}

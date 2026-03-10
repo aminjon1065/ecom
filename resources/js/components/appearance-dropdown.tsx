@@ -43,13 +43,13 @@ export default function AppearanceToggleDropdown({
                     <DropdownMenuItem onClick={() => updateAppearance('light')}>
                         <span className="flex items-center gap-2">
                             <Sun className="h-5 w-5" />
-                            Светлая
+                            Светлый
                         </span>
                     </DropdownMenuItem>
                     <DropdownMenuItem onClick={() => updateAppearance('dark')}>
                         <span className="flex items-center gap-2">
                             <Moon className="h-5 w-5" />
-                            Тёмная
+                            Тёмный
                         </span>
                     </DropdownMenuItem>
                     <DropdownMenuItem
@@ -57,7 +57,7 @@ export default function AppearanceToggleDropdown({
                     >
                         <span className="flex items-center gap-2">
                             <Monitor className="h-5 w-5" />
-                            Системная
+                            Системный
                         </span>
                     </DropdownMenuItem>
                 </DropdownMenuContent>

@@ -109,6 +109,7 @@ Route::patch('user/{user}/active', [UserController::class, 'toggleActive'])->nam
 
 // Рассылки
 Route::get('subscriber', [SubscriberController::class, 'index'])->name('subscriber.index');
+Route::post('subscriber/send', [SubscriberController::class, 'send'])->name('subscriber.send');
 Route::delete('subscriber/{subscriber}', [SubscriberController::class, 'destroy'])->name('subscriber.destroy');
 
 // Импорт Товаров
