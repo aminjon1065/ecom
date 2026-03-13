@@ -178,3 +178,40 @@ it('renders configured content blocks on the home page', function () {
         ->where('contentBlocks.1.products.0.id', $flashSaleProduct->id)
     );
 });
+
+it('renders product type blocks for legacy product type aliases', function () {
+    $category = makeHomeSectionCategory('Legacy Sections');
+    $brand = makeHomeSectionBrand('Legacy Brand');
+
+    $legacyTopProduct = makeHomeSectionProduct([
+        'category_id' => $category->id,
+        'brand_id' => $brand->id,
+        'product_type' => 'top_product',
+    ]);
+
+    $legacyBestProduct = makeHomeSectionProduct([
+        'category_id' => $category->id,
+        'brand_id' => $brand->id,
+        'product_type' => 'best_product',
+    ]);
+
+    HomePageSection::query()->create([
+        'position' => 1,
+        'type' => 'top_products',
+        'category_id' => null,
+    ]);
+
+    HomePageSection::query()->create([
+        'position' => 2,
+        'type' => 'best_products',
+        'category_id' => null,
+    ]);
+
+    $response = $this->get(route('home'));
+
+    $response->assertSuccessful();
+    $response->assertInertia(fn (Assert $page) => $page
+        ->where('contentBlocks.0.products.0.id', $legacyTopProduct->id)
+        ->where('contentBlocks.1.products.0.id', $legacyBestProduct->id)
+    );
+});

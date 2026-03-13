@@ -177,3 +177,77 @@ it('updates a legacy product type row from admin panel using canonical enum valu
         ->and($product->product_type?->value)->toBe('new')
         ->and($product->price)->toBe(199.99);
 });
+
+it('hydrates legacy english product type aliases without enum errors', function () {
+    $category = Category::create([
+        'name' => 'Legacy Alias Category',
+        'slug' => 'legacy-alias-category-'.Str::lower(Str::random(6)),
+        'status' => true,
+    ]);
+
+    $brand = Brand::create([
+        'name' => 'Legacy Alias Brand',
+        'slug' => 'legacy-alias-brand-'.Str::lower(Str::random(6)),
+        'logo' => 'brands/legacy-alias.png',
+        'status' => true,
+        'is_featured' => true,
+    ]);
+
+    DB::table('products')->insert([
+        [
+            'name' => 'Top Alias Product',
+            'code' => 9301,
+            'slug' => 'top-alias-product',
+            'thumb_image' => 'products/thumb.png',
+            'category_id' => $category->id,
+            'brand_id' => $brand->id,
+            'qty' => 2,
+            'short_description' => 'Short description',
+            'long_description' => 'Long description',
+            'price' => 10,
+            'product_type' => 'top_product',
+            'status' => true,
+            'is_approved' => true,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ],
+        [
+            'name' => 'Best Alias Product',
+            'code' => 9302,
+            'slug' => 'best-alias-product',
+            'thumb_image' => 'products/thumb.png',
+            'category_id' => $category->id,
+            'brand_id' => $brand->id,
+            'qty' => 2,
+            'short_description' => 'Short description',
+            'long_description' => 'Long description',
+            'price' => 10,
+            'product_type' => 'best_product',
+            'status' => true,
+            'is_approved' => true,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ],
+        [
+            'name' => 'Featured Alias Product',
+            'code' => 9303,
+            'slug' => 'featured-alias-product',
+            'thumb_image' => 'products/thumb.png',
+            'category_id' => $category->id,
+            'brand_id' => $brand->id,
+            'qty' => 2,
+            'short_description' => 'Short description',
+            'long_description' => 'Long description',
+            'price' => 10,
+            'product_type' => 'featured_product',
+            'status' => true,
+            'is_approved' => true,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ],
+    ]);
+
+    expect(Product::query()->where('code', 9301)->firstOrFail()->product_type?->value)->toBe('top')
+        ->and(Product::query()->where('code', 9302)->firstOrFail()->product_type?->value)->toBe('best')
+        ->and(Product::query()->where('code', 9303)->firstOrFail()->product_type?->value)->toBe('recommended');
+});

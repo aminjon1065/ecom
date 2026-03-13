@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\ProductType;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -30,7 +31,7 @@ use Illuminate\Support\Carbon;
  * @property numeric|null $offer_price
  * @property \Illuminate\Support\Carbon|null $offer_start_date
  * @property \Illuminate\Support\Carbon|null $offer_end_date
- * @property string|null $product_type
+ * @property \App\Enums\ProductType|null $product_type
  * @property bool $status
  * @property bool $is_approved
  * @property string|null $seo_title
@@ -126,8 +127,15 @@ class Product extends Model
         'is_approved' => 'boolean',
         'offer_start_date' => 'date',
         'offer_end_date' => 'date',
-        'product_type' => ProductType::class,
     ];
+
+    protected function productType(): Attribute
+    {
+        return Attribute::make(
+            get: fn (?string $value): ?ProductType => ProductType::fromDatabaseValue($value),
+            set: fn (null|string|ProductType $value): ?string => ProductType::normalizeDatabaseValue($value),
+        );
+    }
 
     public function category(): BelongsTo
     {

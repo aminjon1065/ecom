@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Client;
 
 use App\Enums\HomePageSectionType;
+use App\Enums\ProductType;
 use App\Http\Controllers\Controller;
 use App\Models\Category;
 use App\Models\FlashSale;
@@ -129,7 +130,7 @@ class HomeController extends Controller
         ?string $sort = null,
     ): ?array {
         $products = $this->baseProductQuery()
-            ->where('product_type', $this->normalizeProductType($type))
+            ->whereIn('product_type', $this->normalizeProductTypeValues($type))
             ->latest()
             ->take(8)
             ->get();
@@ -164,13 +165,16 @@ class HomeController extends Controller
             ->withCount('reviews');
     }
 
-    protected function normalizeProductType(HomePageSectionType $type): string
+    /**
+     * @return array<int, string>
+     */
+    protected function normalizeProductTypeValues(HomePageSectionType $type): array
     {
         return match ($type) {
-            HomePageSectionType::NewProducts => 'new',
-            HomePageSectionType::TopProducts => 'top',
-            HomePageSectionType::BestProducts => 'best',
-            default => $type->value,
+            HomePageSectionType::NewProducts => ProductType::databaseValuesFor(ProductType::New),
+            HomePageSectionType::TopProducts => ProductType::databaseValuesFor(ProductType::Top),
+            HomePageSectionType::BestProducts => ProductType::databaseValuesFor(ProductType::Best),
+            default => [$type->value],
         };
     }
 }
