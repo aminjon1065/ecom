@@ -2,104 +2,47 @@
 
 namespace App\Http\Controllers\Client;
 
-use App\Enums\OrderStatus;
+use App\Actions\Account\BuildDashboardDataAction;
+use App\Actions\Account\BuildOrdersPageDataAction;
+use App\Actions\Account\CancelOrderAction;
+use App\Actions\Account\RepeatOrderAction;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Client\AccountOrderIndexRequest;
 use App\Http\Requests\Client\UpdateAccountPasswordRequest;
 use App\Http\Requests\Client\UpdateAccountProfileRequest;
-use App\Models\Cart;
 use App\Models\Order;
-use App\Models\OrderProduct;
-use App\Models\Product;
 use App\Models\UserAddress;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class AccountController extends Controller
 {
+    public function __construct(
+        private readonly BuildDashboardDataAction $buildDashboardDataAction,
+        private readonly BuildOrdersPageDataAction $buildOrdersPageDataAction,
+        private readonly RepeatOrderAction $repeatOrderAction,
+        private readonly CancelOrderAction $cancelOrderAction,
+    ) {}
+
     public function dashboard(AccountOrderIndexRequest $request): Response
     {
         $user = Auth::user();
         $filters = $request->validated();
+        $pageData = $this->buildDashboardDataAction->handle($user, $filters);
 
-        $totalOrders = Order::where('user_id', $user->id)->count();
-        $pendingOrders = Order::where('user_id', $user->id)->where('order_status', 'pending')->count();
-        $completedOrders = Order::where('user_id', $user->id)->where('order_status', 'delivered')->count();
-        $totalSpent = Order::where('user_id', $user->id)->where('payment_status', true)->sum('grand_total');
-
-        $recentOrdersQuery = Order::query()
-            ->where('user_id', $user->id)
-            ->with('products.product:id,name,thumb_image')
-            ->latest();
-
-        if (! empty($filters['search'])) {
-            $search = trim((string) $filters['search']);
-            $recentOrdersQuery->where('invoice_id', 'like', "%{$search}%");
-        }
-
-        if (! empty($filters['status'])) {
-            $recentOrdersQuery->where('order_status', $filters['status']);
-        }
-
-        $recentOrders = $recentOrdersQuery
-            ->take(5)
-            ->get();
-
-        return Inertia::render('client/account/dashboard', [
-            'stats' => [
-                'totalOrders' => $totalOrders,
-                'pendingOrders' => $pendingOrders,
-                'completedOrders' => $completedOrders,
-                'totalSpent' => $totalSpent,
-            ],
-            'recentOrders' => $recentOrders,
-            'dashboardFilters' => collect($filters)
-                ->only(['search', 'status'])
-                ->filter(fn ($value) => $value !== null && $value !== '')
-                ->all(),
-        ]);
+        return Inertia::render('client/account/dashboard', $pageData);
     }
 
     public function orders(AccountOrderIndexRequest $request): Response
     {
         $filters = $request->validated();
+        $pageData = $this->buildOrdersPageDataAction->handle((int) Auth::id(), $filters);
 
-        $query = Order::query()
-            ->where('user_id', Auth::id())
-            ->with('products.product:id,name,thumb_image')
-            ->latest();
-
-        if (! empty($filters['search'])) {
-            $search = trim((string) $filters['search']);
-            $query->where('invoice_id', 'like', "%{$search}%");
-        }
-
-        if (! empty($filters['status'])) {
-            $query->where('order_status', $filters['status']);
-        }
-
-        if (! empty($filters['date_from'])) {
-            $query->whereDate('created_at', '>=', $filters['date_from']);
-        }
-
-        if (! empty($filters['date_to'])) {
-            $query->whereDate('created_at', '<=', $filters['date_to']);
-        }
-
-        $orders = $query->paginate(10)->withQueryString();
-
-        return Inertia::render('client/account/orders', [
-            'orders' => $orders,
-            'filters' => collect($filters)
-                ->only(['search', 'status', 'date_from', 'date_to'])
-                ->filter(fn ($value) => $value !== null && $value !== '')
-                ->all(),
-        ]);
+        return Inertia::render('client/account/orders', $pageData);
     }
 
     public function orderShow(Order $order): Response
@@ -117,58 +60,7 @@ class AccountController extends Controller
     {
         abort_unless($order->user_id === Auth::id(), 403);
 
-        $order->load('products');
-
-        $userId = Auth::id();
-        $orderProductIds = $order->products->pluck('product_id')->all();
-
-        $availableProducts = Product::query()
-            ->whereIn('id', $orderProductIds)
-            ->where('status', true)
-            ->where('is_approved', true)
-            ->get()
-            ->keyBy('id');
-
-        $existingCartItems = Cart::query()
-            ->where('user_id', $userId)
-            ->whereIn('product_id', $orderProductIds)
-            ->get()
-            ->keyBy('product_id');
-
-        $addedItems = 0;
-
-        foreach ($order->products as $orderItem) {
-            /** @var Product|null $product */
-            $product = $availableProducts->get($orderItem->product_id);
-
-            if (! $product || $product->qty < 1) {
-                continue;
-            }
-
-            $targetQty = min((int) $orderItem->quantity, (int) $product->qty, 100);
-            if ($targetQty < 1) {
-                continue;
-            }
-
-            $existingCart = $existingCartItems->get($product->id);
-
-            if ($existingCart) {
-                $newQuantity = min($existingCart->quantity + $targetQty, (int) $product->qty, 100);
-                if ($newQuantity <= $existingCart->quantity) {
-                    continue;
-                }
-
-                $existingCart->update(['quantity' => $newQuantity]);
-            } else {
-                Cart::query()->create([
-                    'user_id' => $userId,
-                    'product_id' => $product->id,
-                    'quantity' => $targetQty,
-                ]);
-            }
-
-            $addedItems++;
-        }
+        $addedItems = $this->repeatOrderAction->handle($order, (int) Auth::id());
 
         if ($addedItems === 0) {
             return redirect()->route('cart.index')
@@ -183,29 +75,12 @@ class AccountController extends Controller
     {
         abort_unless($order->user_id === Auth::id(), 403);
 
-        if (! in_array($order->order_status, [OrderStatus::Pending, OrderStatus::Processing], true)) {
+        if (! $this->cancelOrderAction->canCancel($order)) {
             return redirect()->back()
                 ->with('warning', 'Этот заказ уже нельзя отменить.');
         }
 
-        DB::transaction(function () use ($order): void {
-            /** @var \Illuminate\Database\Eloquent\Collection<int, OrderProduct> $orderProducts */
-            $orderProducts = OrderProduct::query()
-                ->where('order_id', $order->id)
-                ->lockForUpdate()
-                ->get();
-
-            foreach ($orderProducts as $orderProduct) {
-                Product::query()
-                    ->where('id', $orderProduct->product_id)
-                    ->lockForUpdate()
-                    ->increment('qty', $orderProduct->quantity);
-            }
-
-            $order->update([
-                'order_status' => OrderStatus::Cancelled,
-            ]);
-        });
+        $this->cancelOrderAction->handle($order);
 
         return redirect()->back()
             ->with('success', 'Заказ успешно отменён.');

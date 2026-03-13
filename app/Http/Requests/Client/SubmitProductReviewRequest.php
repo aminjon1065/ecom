@@ -2,6 +2,7 @@
 
 namespace App\Http\Requests\Client;
 
+use App\Enums\OrderStatus;
 use App\Models\Order;
 use App\Models\Product;
 use Illuminate\Foundation\Http\FormRequest;
@@ -20,7 +21,7 @@ class SubmitProductReviewRequest extends FormRequest
 
         return Order::query()
             ->where('user_id', $user->id)
-            ->where('order_status', '!=', 'cancelled')
+            ->where('order_status', '!=', OrderStatus::Cancelled->value)
             ->whereHas('products', function ($query) use ($product): void {
                 $query->where('product_id', $product->id);
             })

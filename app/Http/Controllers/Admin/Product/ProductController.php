@@ -11,50 +11,34 @@ use App\Models\Category;
 use App\Models\ChildCategory;
 use App\Models\Product;
 use App\Models\SubCategory;
-use App\Services\ImageService;
+use App\Services\Product\ProductUpsertService;
+use App\Services\Product\ProductWriteOptions;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Schema;
-use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str;
 use Inertia\Inertia;
 
 class ProductController extends Controller
 {
     public function __construct(
-        private readonly ImageService $imageService,
+        private readonly ProductUpsertService $productUpsertService,
     ) {}
 
     public function index(Request $request): \Inertia\Response
     {
-        $selectColumns = [
-            'id',
-            'name',
-            'thumb_image',
-            'price',
-            'sku',
-            'qty',
-            'code',
-            'status',
-            'category_id',
-            'brand_id',
-        ];
-
-        if (Schema::hasColumn('products', 'link_source')) {
-            $selectColumns['first_source_link'] = 'link_source';
-
-            if (Schema::hasColumn('products', 'link_first')) {
-                $selectColumns['second_source_link'] = 'link_first';
-            }
-        } else {
-            foreach (['first_source_link', 'second_source_link'] as $column) {
-                if (Schema::hasColumn('products', $column)) {
-                    $selectColumns[] = $column;
-                }
-            }
-        }
-
         $products = Product::query()
-            ->select($selectColumns)
+            ->select([
+                'id',
+                'name',
+                'thumb_image',
+                'price',
+                'sku',
+                'qty',
+                'code',
+                'status',
+                'category_id',
+                'brand_id',
+                'first_source_link',
+                'second_source_link',
+            ])
             ->with([
                 'category:id,name',
                 'brand:id,name',
@@ -66,10 +50,8 @@ class ProductController extends Controller
                         ->orWhere('sku', 'like', "%{$search}%");
                 });
             })
-            ->when($request->category_id, fn ($q, $v) => $q->where('category_id', $v)
-            )
-            ->when($request->brand_id, fn ($q, $v) => $q->where('brand_id', $v)
-            )
+            ->when($request->category_id, fn ($q, $v) => $q->where('category_id', $v))
+            ->when($request->brand_id, fn ($q, $v) => $q->where('brand_id', $v))
             ->when(
                 $request->filled('status'),
                 fn ($q) => $q->where('status', $request->boolean('status'))
@@ -100,16 +82,13 @@ class ProductController extends Controller
         return redirect()->back();
     }
 
-    /**
-     * Inline update a single field on a product.
-     */
     public function updateField(UpdateProductFieldRequest $request, Product $product): \Illuminate\Http\RedirectResponse
     {
         $validated = $request->validated();
-        $field = $validated['field'];
-        $value = $validated['value'];
 
-        $product->update([$field => $value]);
+        $product->update([
+            $validated['field'] => $validated['value'],
+        ]);
 
         return redirect()->back();
     }
@@ -126,24 +105,10 @@ class ProductController extends Controller
 
     public function store(StoreProductRequest $request): \Illuminate\Http\RedirectResponse
     {
-        $data = $request->validated();
-
-        // THUMB
-        if ($request->hasFile('thumb_image')) {
-            $data['thumb_image'] = $this->imageService->storeThumb(
-                $request->file('thumb_image'), 'products/thumbs'
-            );
-        }
-        $data['slug'] = Str::slug($data['name']);
-
-        // GALLERY
-        if ($request->hasFile('gallery')) {
-            $data['gallery'] = collect($request->file('gallery'))
-                ->map(fn ($file) => $this->imageService->storeOptimized($file, 'products/gallery', 800))
-                ->toArray();
-        }
-
-        Product::create($data);
+        $this->productUpsertService->create(
+            $request->validated(),
+            new ProductWriteOptions,
+        );
 
         return redirect()->route('admin.product.index')->with('success', 'Продукт добавлен');
     }
@@ -161,31 +126,11 @@ class ProductController extends Controller
 
     public function update(UpdateProductRequest $request, Product $product): \Illuminate\Http\RedirectResponse
     {
-        $data = $request->validated();
-
-        // THUMB — only replace if a new file was uploaded
-        if ($request->hasFile('thumb_image')) {
-            if ($product->thumb_image) {
-                Storage::disk('public')->delete($product->thumb_image);
-            }
-            $data['thumb_image'] = $this->imageService->storeThumb(
-                $request->file('thumb_image'), 'products/thumbs'
-            );
-        } else {
-            unset($data['thumb_image']);
-        }
-
-        // Update slug when name changes
-        $data['slug'] = Str::slug($data['name']);
-
-        // GALLERY
-        if ($request->hasFile('gallery')) {
-            $data['gallery'] = collect($request->file('gallery'))
-                ->map(fn ($file) => $this->imageService->storeOptimized($file, 'products/gallery', 800))
-                ->toArray();
-        }
-
-        $product->update($data);
+        $this->productUpsertService->update(
+            $product,
+            $request->validated(),
+            new ProductWriteOptions,
+        );
 
         return redirect()->route('admin.product.index')->with('success', 'Продукт обновлён');
     }

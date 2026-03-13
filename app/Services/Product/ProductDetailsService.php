@@ -2,6 +2,7 @@
 
 namespace App\Services\Product;
 
+use App\Enums\OrderStatus;
 use App\Models\Order;
 use App\Models\PriceAlert;
 use App\Models\Product;
@@ -98,7 +99,7 @@ class ProductDetailsService
             'isAuthenticated' => true,
             'canReviewProduct' => Order::query()
                 ->where('user_id', $user->id)
-                ->where('order_status', '!=', 'cancelled')
+                ->where('order_status', '!=', OrderStatus::Cancelled->value)
                 ->whereHas('products', function ($query) use ($product): void {
                     $query->where('product_id', $product->id);
                 })

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Vendor;
 
+use App\Enums\OrderStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Vendor\UpdateVendorProfileRequest;
 use App\Models\Order;
@@ -50,7 +51,7 @@ class VendorController extends Controller
 
         // 1 query: merge total / pending order counts.
         $orderStats = Order::whereHas('products', fn ($q) => $q->whereIn('product_id', $productIds))
-            ->selectRaw("COUNT(*) as total, SUM(order_status = 'pending') as pending")
+            ->selectRaw('COUNT(*) as total, SUM(order_status = ?) as pending', [OrderStatus::Pending->value])
             ->first();
 
         // 1 query: review count + average rating.

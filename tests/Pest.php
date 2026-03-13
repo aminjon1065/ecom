@@ -1,5 +1,9 @@
 <?php
 
+if (! function_exists('socket_create_listen')) {
+    require_once __DIR__.'/pest-browser-sockets-polyfill.php';
+}
+
 /*
 |--------------------------------------------------------------------------
 | Test Case

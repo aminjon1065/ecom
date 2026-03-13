@@ -239,8 +239,6 @@ const columns: Column<Product>[] = [
         className: 'w-[320px] text-center',
         render: (row) => {
             const rawSourceLinks = [
-                row.link_source,
-                row.link_first,
                 row.first_source_link,
                 row.second_source_link,
             ];

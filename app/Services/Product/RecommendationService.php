@@ -2,6 +2,7 @@
 
 namespace App\Services\Product;
 
+use App\Enums\OrderStatus;
 use App\Models\Product;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
@@ -42,7 +43,7 @@ class RecommendationService
         $sourceOrderIds = DB::table('order_products')
             ->join('orders', 'orders.id', '=', 'order_products.order_id')
             ->where('order_products.product_id', $product->id)
-            ->where('orders.order_status', '!=', 'cancelled')
+            ->where('orders.order_status', '!=', OrderStatus::Cancelled->value)
             ->pluck('order_products.order_id');
 
         if ($sourceOrderIds->isEmpty()) {
@@ -56,7 +57,7 @@ class RecommendationService
             ->where('products.id', '!=', $product->id)
             ->where('products.status', true)
             ->where('products.is_approved', true)
-            ->where('orders.order_status', '!=', 'cancelled')
+            ->where('orders.order_status', '!=', OrderStatus::Cancelled->value)
             ->groupBy('products.id')
             ->select('products.*')
             ->selectRaw('count(distinct order_products.order_id) as co_order_count')
@@ -82,7 +83,7 @@ class RecommendationService
         $sourceOrderIds = DB::table('order_products')
             ->join('orders', 'orders.id', '=', 'order_products.order_id')
             ->whereIn('order_products.product_id', $productIds)
-            ->where('orders.order_status', '!=', 'cancelled')
+            ->where('orders.order_status', '!=', OrderStatus::Cancelled->value)
             ->pluck('order_products.order_id');
 
         if ($sourceOrderIds->isEmpty()) {
@@ -96,7 +97,7 @@ class RecommendationService
             ->whereNotIn('products.id', $productIds)
             ->where('products.status', true)
             ->where('products.is_approved', true)
-            ->where('orders.order_status', '!=', 'cancelled')
+            ->where('orders.order_status', '!=', OrderStatus::Cancelled->value)
             ->groupBy('products.id')
             ->select('products.*')
             ->selectRaw('count(distinct order_products.order_id) as co_order_count')

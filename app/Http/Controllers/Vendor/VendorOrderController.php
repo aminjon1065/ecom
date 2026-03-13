@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Vendor;
 
+use App\Enums\OrderStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Vendor\UpdateVendorOrderStatusRequest;
 use App\Models\Order;
@@ -64,7 +65,9 @@ class VendorOrderController extends Controller
 
     public function updateStatus(UpdateVendorOrderStatusRequest $request, Order $order): RedirectResponse
     {
-        $order->update(['order_status' => $request->validated('order_status')]);
+        $order->update([
+            'order_status' => OrderStatus::from($request->validated('order_status')),
+        ]);
 
         return redirect()->back();
     }

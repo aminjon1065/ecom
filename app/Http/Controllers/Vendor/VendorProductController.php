@@ -10,16 +10,21 @@ use App\Models\Category;
 use App\Models\ChildCategory;
 use App\Models\Product;
 use App\Models\SubCategory;
+use App\Services\Product\ProductUpsertService;
+use App\Services\Product\ProductWriteOptions;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class VendorProductController extends Controller
 {
+    public function __construct(
+        private readonly ProductUpsertService $productUpsertService,
+    ) {}
+
     public function index(Request $request): Response
     {
         $vendor = Auth::user()->vendor;
@@ -60,18 +65,16 @@ class VendorProductController extends Controller
     public function store(StoreVendorProductRequest $request): RedirectResponse
     {
         $vendor = Auth::user()->vendor;
-        $validated = $request->validated();
 
-        $validated['vendor_id'] = $vendor->id;
-        $validated['slug'] = Str::slug($validated['name']).'-'.Str::random(5);
-        $validated['is_approved'] = false;
-        $validated['status'] = true;
-
-        if ($request->hasFile('thumb_image')) {
-            $validated['thumb_image'] = $request->file('thumb_image')->store('products', 'public');
-        }
-
-        Product::create($validated);
+        $this->productUpsertService->create(
+            $request->validated(),
+            new ProductWriteOptions(
+                vendorId: $vendor->id,
+                forceApproval: false,
+                forceStatus: true,
+                appendRandomSuffix: true,
+            ),
+        );
 
         return redirect()->route('vendor.product.index');
     }
@@ -92,23 +95,14 @@ class VendorProductController extends Controller
     public function update(UpdateVendorProductRequest $request, Product $product): RedirectResponse
     {
         $this->authorize('update', $product);
-        $validated = $request->validated();
 
-        if ($request->hasFile('thumb_image')) {
-            if ($product->thumb_image) {
-                Storage::disk('public')->delete($product->thumb_image);
-            }
-            $validated['thumb_image'] = $request->file('thumb_image')->store('products', 'public');
-        } else {
-            // No new file uploaded — keep the existing image, don't overwrite with null.
-            unset($validated['thumb_image']);
-        }
-
-        // Any vendor edit resets approval — admin must re-approve before the
-        // product becomes visible on the storefront again.
-        $validated['is_approved'] = false;
-
-        $product->update($validated);
+        $this->productUpsertService->update(
+            $product,
+            $request->validated(),
+            new ProductWriteOptions(
+                forceApproval: false,
+            ),
+        );
 
         return redirect()->route('vendor.product.index');
     }

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Enums\OrderStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\DashboardMetricsRequest;
 use App\Models\Cart;
@@ -48,7 +49,7 @@ class DashboardController extends Controller
             'today_revenue' => $todayRevenue,
             'yesterday_revenue' => $yesterdayRevenue,
             'total_orders' => Order::count(),
-            'pending_orders' => Order::where('order_status', 'pending')->count(),
+            'pending_orders' => Order::where('order_status', OrderStatus::Pending->value)->count(),
             'total_products' => Product::count(),
             'pending_products' => Product::where('is_approved', false)->count(),
             'total_customers' => $hasUserRole ? User::role('user')->count() : User::count(),
@@ -103,7 +104,7 @@ class DashboardController extends Controller
             ->whereNotNull('user_id');
         $cartUsersQuery = Cart::query();
         $orderUsersQuery = Order::query()
-            ->where('order_status', '!=', 'cancelled');
+            ->where('order_status', '!=', OrderStatus::Cancelled->value);
 
         if ($periodStart !== null) {
             $viewerUsersQuery->where('viewed_at', '>=', $periodStart);
@@ -133,7 +134,7 @@ class DashboardController extends Controller
         $topProductsQuery = Product::query()
             ->join('order_products', 'order_products.product_id', '=', 'products.id')
             ->join('orders', 'orders.id', '=', 'order_products.order_id')
-            ->where('orders.order_status', '!=', 'cancelled')
+            ->where('orders.order_status', '!=', OrderStatus::Cancelled->value)
             ->groupBy('products.id', 'products.name', 'products.thumb_image')
             ->select('products.id', 'products.name', 'products.thumb_image')
             ->selectRaw('sum(order_products.quantity) as sold_qty')

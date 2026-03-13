@@ -95,7 +95,9 @@ it('vendor can create a product (pending approval)', function () {
 
     expect($product->vendor_id)->toBe($vendor->id)
         ->and($product->is_approved)->toBeFalse()
-        ->and($product->status)->toBeTrue();
+        ->and($product->status)->toBeTrue()
+        ->and($product->thumb_image)->toStartWith('products/thumbs/')
+        ->and($product->thumb_image)->toEndWith('.webp');
 });
 
 it('vendor can update their own product and it resets approval', function () {
