@@ -86,7 +86,7 @@ class CheckoutController extends Controller
                 'duration_ms' => (int) ((microtime(true) - $startedAt) * 1000),
             ]);
 
-            return back()->withErrors(['code' => $result->message ?? 'РљСѓРїРѕРЅ РЅРµ РјРѕР¶РµС‚ Р±С‹С‚СЊ РїСЂРёРјРµРЅС‘РЅ.']);
+            return back()->withErrors(['code' => $result->message ?? 'Купон не может быть применён.']);
         }
 
         Log::info('checkout.coupon.apply', [
@@ -123,7 +123,7 @@ class CheckoutController extends Controller
         return match ($result->status) {
             'cart_empty' => redirect()->route('cart.index'),
             'invalid' => back()->withErrors([
-                $result->field ?? 'checkout' => $result->message ?? 'РћС„РѕСЂРјР»РµРЅРёРµ Р·Р°РєР°Р·Р° РЅРµРґРѕСЃС‚СѓРїРЅРѕ.',
+                $result->field ?? 'checkout' => $result->message ?? 'Оформление заказа недоступно.',
             ]),
             'idempotent', 'success' => redirect()->route('account.orders.show', $result->order),
             default => throw new \RuntimeException('Unknown checkout result status.'),

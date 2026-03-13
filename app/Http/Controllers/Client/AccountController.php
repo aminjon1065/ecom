@@ -122,7 +122,6 @@ class AccountController extends Controller
         $userId = Auth::id();
         $orderProductIds = $order->products->pluck('product_id')->all();
 
-        // Batch-load all purchasable products in one query instead of one per item.
         $availableProducts = Product::query()
             ->whereIn('id', $orderProductIds)
             ->where('status', true)
@@ -130,7 +129,6 @@ class AccountController extends Controller
             ->get()
             ->keyBy('id');
 
-        // Batch-load existing cart rows in one query instead of one per item.
         $existingCartItems = Cart::query()
             ->where('user_id', $userId)
             ->whereIn('product_id', $orderProductIds)
@@ -174,11 +172,11 @@ class AccountController extends Controller
 
         if ($addedItems === 0) {
             return redirect()->route('cart.index')
-                ->with('warning', 'РќРµ СѓРґР°Р»РѕСЃСЊ РґРѕР±Р°РІРёС‚СЊ С‚РѕРІР°СЂС‹: РЅРµС‚ РґРѕСЃС‚СѓРїРЅС‹С… РїРѕР·РёС†РёР№.');
+                ->with('warning', 'Не удалось добавить товары: нет доступных позиций.');
         }
 
         return redirect()->route('cart.index')
-            ->with('success', "Р”РѕР±Р°РІР»РµРЅРѕ РїРѕР·РёС†РёР№ РІ РєРѕСЂР·РёРЅСѓ: {$addedItems}.");
+            ->with('success', "Добавлено позиций в корзину: {$addedItems}.");
     }
 
     public function cancelOrder(Order $order): RedirectResponse
@@ -187,7 +185,7 @@ class AccountController extends Controller
 
         if (! in_array($order->order_status, [OrderStatus::Pending, OrderStatus::Processing], true)) {
             return redirect()->back()
-                ->with('warning', 'Р­С‚РѕС‚ Р·Р°РєР°Р· СѓР¶Рµ РЅРµР»СЊР·СЏ РѕС‚РјРµРЅРёС‚СЊ.');
+                ->with('warning', 'Этот заказ уже нельзя отменить.');
         }
 
         DB::transaction(function () use ($order): void {
@@ -210,7 +208,7 @@ class AccountController extends Controller
         });
 
         return redirect()->back()
-            ->with('success', 'Р—Р°РєР°Р· СѓСЃРїРµС€РЅРѕ РѕС‚РјРµРЅС‘РЅ.');
+            ->with('success', 'Заказ успешно отменён.');
     }
 
     public function downloadInvoice(Order $order)
@@ -221,7 +219,7 @@ class AccountController extends Controller
 
         $pdf = Pdf::loadView('invoices.order-invoice', [
             'order' => $order,
-            'title' => 'Р§РµРє #'.$order->invoice_id,
+            'title' => 'Чек #'.$order->invoice_id,
         ]);
 
         return $pdf->download("invoice-{$order->invoice_id}.pdf");
@@ -263,6 +261,6 @@ class AccountController extends Controller
             'password' => Hash::make($request->validated('password')),
         ])->save();
 
-        return redirect()->back()->with('success', 'РџР°СЂРѕР»СЊ СѓСЃРїРµС€РЅРѕ РёР·РјРµРЅС‘РЅ.');
+        return redirect()->back()->with('success', 'Пароль успешно изменён.');
     }
 }

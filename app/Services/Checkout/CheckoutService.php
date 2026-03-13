@@ -101,7 +101,7 @@ class CheckoutService
 
                         return CheckoutOrderResult::invalid(
                             field: 'checkout',
-                            message: "РќРµРґРѕСЃС‚Р°С‚РѕС‡РЅРѕ С‚РѕРІР°СЂР° \"{$item->product?->name}\" РЅР° СЃРєР»Р°РґРµ.",
+                            message: "Недостаточно товара \"{$item->product?->name}\" на складе.",
                         );
                     }
                 }
@@ -140,7 +140,7 @@ class CheckoutService
 
                         return CheckoutOrderResult::invalid(
                             field: 'coupon_code',
-                            message: $couponResult->message ?? 'РљСѓРїРѕРЅ РЅРµ РјРѕР¶РµС‚ Р±С‹С‚СЊ РїСЂРёРјРµРЅС‘РЅ.',
+                            message: $couponResult->message ?? 'Купон не может быть применён.',
                         );
                     }
 

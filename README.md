@@ -1,4 +1,4 @@
-# E-Commerce Platform (Ecom)
+# E-Commerce Platform (Neutron)
 
 Современная, масштабируемая e-commerce платформа, созданная с использованием новейшей экосистемы Laravel и React.
 
@@ -105,7 +105,3 @@ npm run types
   - **`lib/`**: Вспомогательные функции.
 - **`routes/`**: Маршруты (web, API, консольные).
 - **`tests/`**: Тесты (Feature и Unit).
-
-## 📄 Лицензия
-
-Этот проект является программным обеспечением с открытым исходным кодом, распространяемым по [лицензии MIT](https://opensource.org/licenses/MIT).
