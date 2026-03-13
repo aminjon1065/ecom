@@ -2,14 +2,13 @@
 
 namespace App\Http\Controllers\Vendor;
 
-use App\Enums\OrderStatus;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Vendor\UpdateVendorOrderStatusRequest;
 use App\Models\Order;
 use App\Models\Product;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Validation\Rules\Enum;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -63,22 +62,9 @@ class VendorOrderController extends Controller
         ]);
     }
 
-    public function updateStatus(Request $request, Order $order): RedirectResponse
+    public function updateStatus(UpdateVendorOrderStatusRequest $request, Order $order): RedirectResponse
     {
-        $vendor = Auth::user()->vendor;
-        $productIds = Product::where('vendor_id', $vendor->id)->pluck('id');
-
-        // Ensure vendor has products in this order
-        abort_unless(
-            $order->products()->whereIn('product_id', $productIds)->exists(),
-            403
-        );
-
-        $request->validate([
-            'order_status' => ['required', new Enum(OrderStatus::class)],
-        ]);
-
-        $order->update(['order_status' => OrderStatus::from($request->order_status)]);
+        $order->update(['order_status' => $request->validated('order_status')]);
 
         return redirect()->back();
     }

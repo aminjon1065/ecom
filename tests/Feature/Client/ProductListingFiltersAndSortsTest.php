@@ -327,6 +327,101 @@ it('validates max price is not lower than min price on product listing filters',
     $response->assertSessionHasErrors('max_price');
 });
 
+it('filters products by effective price when active offer is present', function () {
+    $category = createCategory('Offer filter category');
+    $brand = createBrand('Offer filter brand');
+
+    $discountedIntoRange = createProduct([
+        'name' => 'Discounted into range',
+        'slug' => 'discounted-into-range',
+        'code' => 1501,
+        'category_id' => $category->id,
+        'brand_id' => $brand->id,
+        'price' => 200,
+        'offer_price' => 80,
+        'offer_start_date' => now()->subDay(),
+        'offer_end_date' => now()->addDay(),
+    ]);
+
+    createProduct([
+        'name' => 'Regular expensive product',
+        'slug' => 'regular-expensive-product',
+        'code' => 1502,
+        'category_id' => $category->id,
+        'brand_id' => $brand->id,
+        'price' => 150,
+    ]);
+
+    $response = $this->get(route('products.index', [
+        'category' => (string) $category->id,
+        'brand' => (string) $brand->id,
+        'min_price' => '70',
+        'max_price' => '100',
+    ]));
+
+    $response->assertSuccessful();
+
+    $response->assertInertia(fn (Assert $page) => $page
+        ->component('client/products/index')
+        ->where('productsMeta.total', 1)
+        ->has('products', 1)
+        ->where('products.0.id', $discountedIntoRange->id)
+    );
+});
+
+it('sorts products by effective price when active offer is present', function () {
+    $category = createCategory('Offer sort category');
+    $brand = createBrand('Offer sort brand');
+
+    $discountedCheapest = createProduct([
+        'name' => 'Discounted cheapest',
+        'slug' => 'discounted-cheapest',
+        'code' => 1601,
+        'category_id' => $category->id,
+        'brand_id' => $brand->id,
+        'price' => 200,
+        'offer_price' => 60,
+        'offer_start_date' => now()->subDay(),
+        'offer_end_date' => now()->addDay(),
+        'qty' => 5,
+    ]);
+
+    $regularMiddle = createProduct([
+        'name' => 'Regular middle',
+        'slug' => 'regular-middle',
+        'code' => 1602,
+        'category_id' => $category->id,
+        'brand_id' => $brand->id,
+        'price' => 90,
+        'qty' => 5,
+    ]);
+
+    $regularHighest = createProduct([
+        'name' => 'Regular highest',
+        'slug' => 'regular-highest',
+        'code' => 1603,
+        'category_id' => $category->id,
+        'brand_id' => $brand->id,
+        'price' => 120,
+        'qty' => 5,
+    ]);
+
+    $response = $this->get(route('products.index', [
+        'category' => (string) $category->id,
+        'brand' => (string) $brand->id,
+        'sort' => 'price_asc',
+    ]));
+
+    $response->assertSuccessful();
+
+    $response->assertInertia(fn (Assert $page) => $page
+        ->component('client/products/index')
+        ->where('products.0.id', $discountedCheapest->id)
+        ->where('products.1.id', $regularMiddle->id)
+        ->where('products.2.id', $regularHighest->id)
+    );
+});
+
 function createCategory(string $name): Category
 {
     return Category::create([

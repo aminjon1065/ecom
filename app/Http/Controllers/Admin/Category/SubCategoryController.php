@@ -3,10 +3,11 @@
 namespace App\Http\Controllers\Admin\Category;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\StoreSubCategoryRequest;
+use App\Http\Requests\Admin\UpdateSubCategoryRequest;
 use App\Models\Category;
 use App\Models\SubCategory;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Inertia\Inertia;
 use Str;
@@ -26,14 +27,9 @@ class SubCategoryController extends Controller
         ]);
     }
 
-    public function store(Request $request): RedirectResponse
+    public function store(StoreSubCategoryRequest $request): RedirectResponse
     {
-        $data = $request->validate([
-            'category_id' => ['required', 'exists:categories,id'],
-            'name' => ['required', 'string', 'max:255'],
-            'slug' => ['nullable', 'string', 'max:255', 'unique:sub_categories,slug'],
-            'status' => ['boolean'],
-        ]);
+        $data = $request->validated();
 
         if (empty($data['slug'])) {
             $data['slug'] = Str::slug($data['name']);
@@ -47,13 +43,9 @@ class SubCategoryController extends Controller
         return redirect()->back();
     }
 
-    public function update(Request $request, SubCategory $subCategory): RedirectResponse
+    public function update(UpdateSubCategoryRequest $request, SubCategory $subCategory): RedirectResponse
     {
-        $data = $request->validate([
-            'category_id' => ['required', 'exists:categories,id'],
-            'name' => ['required', 'string', 'max:255'],
-            'status' => ['boolean'],
-        ]);
+        $data = $request->validated();
 
         $subCategory->update($data);
         Cache::forget('categories_menu');

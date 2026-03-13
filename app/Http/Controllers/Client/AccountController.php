@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Client;
 use App\Enums\OrderStatus;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Client\AccountOrderIndexRequest;
+use App\Http\Requests\Client\UpdateAccountPasswordRequest;
+use App\Http\Requests\Client\UpdateAccountProfileRequest;
 use App\Models\Cart;
 use App\Models\Order;
 use App\Models\OrderProduct;
@@ -12,11 +14,9 @@ use App\Models\Product;
 use App\Models\UserAddress;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Validation\Rules\Password;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -163,11 +163,11 @@ class AccountController extends Controller
 
         if ($addedItems === 0) {
             return redirect()->route('cart.index')
-                ->with('warning', 'Не удалось добавить товары: нет доступных позиций.');
+                ->with('warning', 'РќРµ СѓРґР°Р»РѕСЃСЊ РґРѕР±Р°РІРёС‚СЊ С‚РѕРІР°СЂС‹: РЅРµС‚ РґРѕСЃС‚СѓРїРЅС‹С… РїРѕР·РёС†РёР№.');
         }
 
         return redirect()->route('cart.index')
-            ->with('success', "Добавлено позиций в корзину: {$addedItems}.");
+            ->with('success', "Р”РѕР±Р°РІР»РµРЅРѕ РїРѕР·РёС†РёР№ РІ РєРѕСЂР·РёРЅСѓ: {$addedItems}.");
     }
 
     public function cancelOrder(Order $order): RedirectResponse
@@ -176,7 +176,7 @@ class AccountController extends Controller
 
         if (! in_array($order->order_status, [OrderStatus::Pending, OrderStatus::Processing], true)) {
             return redirect()->back()
-                ->with('warning', 'Этот заказ уже нельзя отменить.');
+                ->with('warning', 'Р­С‚РѕС‚ Р·Р°РєР°Р· СѓР¶Рµ РЅРµР»СЊР·СЏ РѕС‚РјРµРЅРёС‚СЊ.');
         }
 
         DB::transaction(function () use ($order): void {
@@ -199,7 +199,7 @@ class AccountController extends Controller
         });
 
         return redirect()->back()
-            ->with('success', 'Заказ успешно отменён.');
+            ->with('success', 'Р—Р°РєР°Р· СѓСЃРїРµС€РЅРѕ РѕС‚РјРµРЅС‘РЅ.');
     }
 
     public function downloadInvoice(Order $order)
@@ -210,7 +210,7 @@ class AccountController extends Controller
 
         $pdf = Pdf::loadView('invoices.order-invoice', [
             'order' => $order,
-            'title' => 'Чек #'.$order->invoice_id,
+            'title' => 'Р§РµРє #'.$order->invoice_id,
         ]);
 
         return $pdf->download("invoice-{$order->invoice_id}.pdf");
@@ -237,41 +237,21 @@ class AccountController extends Controller
         ]);
     }
 
-    public function updateProfile(Request $request): RedirectResponse
+    public function updateProfile(UpdateAccountProfileRequest $request): RedirectResponse
     {
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'phone' => 'nullable|string|max:20',
-        ]);
-
-        Auth::user()->update($validated);
+        Auth::user()->update($request->validated());
 
         return redirect()->back();
     }
 
-    public function updatePassword(Request $request): RedirectResponse
+    public function updatePassword(UpdateAccountPasswordRequest $request): RedirectResponse
     {
         $user = Auth::user();
 
-        $isSocialOnly = ($user->telegram_id || $user->google_id)
-            && str_ends_with($user->email, '@telegram.local');
-
-        $rules = [
-            'password' => ['required', 'string', Password::min(8), 'confirmed'],
-        ];
-
-        if (! $isSocialOnly) {
-            $rules['current_password'] = ['required', 'string', 'current_password:web'];
-        }
-
-        $request->validate($rules, [
-            'current_password.current_password' => 'Текущий пароль указан неверно.',
-        ]);
-
         $user->forceFill([
-            'password' => Hash::make($request->input('password')),
+            'password' => Hash::make($request->validated('password')),
         ])->save();
 
-        return redirect()->back()->with('success', 'Пароль успешно изменён.');
+        return redirect()->back()->with('success', 'РџР°СЂРѕР»СЊ СѓСЃРїРµС€РЅРѕ РёР·РјРµРЅС‘РЅ.');
     }
 }

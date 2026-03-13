@@ -3,10 +3,11 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\StoreSliderRequest;
+use App\Http\Requests\Admin\UpdateSliderRequest;
 use App\Models\Slider;
 use App\Services\ImageService;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -26,17 +27,9 @@ class SliderController extends Controller
         ]);
     }
 
-    public function store(Request $request): RedirectResponse
+    public function store(StoreSliderRequest $request): RedirectResponse
     {
-        $data = $request->validate([
-            'banner' => ['required', 'image', 'mimes:png,jpg,jpeg,webp', 'max:4096'],
-            'type' => ['required', 'string', 'max:255'],
-            'title' => ['required', 'string', 'max:255'],
-            'starting_price' => ['required', 'string', 'max:255'],
-            'btn_url' => ['required', 'string', 'max:255'],
-            'serial' => ['required', 'integer', 'unique:sliders,serial'],
-            'status' => ['boolean'],
-        ]);
+        $data = $request->validated();
 
         $data['banner'] = $this->imageService->storeOptimized($request->file('banner'), 'sliders', 1400);
         $data['status'] = $data['status'] ?? true;
@@ -46,17 +39,9 @@ class SliderController extends Controller
         return redirect()->back();
     }
 
-    public function update(Request $request, Slider $slider): RedirectResponse
+    public function update(UpdateSliderRequest $request, Slider $slider): RedirectResponse
     {
-        $data = $request->validate([
-            'banner' => ['nullable', 'image', 'mimes:png,jpg,jpeg,webp', 'max:4096'],
-            'type' => ['required', 'string', 'max:255'],
-            'title' => ['required', 'string', 'max:255'],
-            'starting_price' => ['required', 'string', 'max:255'],
-            'btn_url' => ['required', 'string', 'max:255'],
-            'serial' => ['required', 'integer', 'unique:sliders,serial,'.$slider->id],
-            'status' => ['boolean'],
-        ]);
+        $data = $request->validated();
 
         if ($request->hasFile('banner')) {
             Storage::disk('public')->delete($slider->banner);

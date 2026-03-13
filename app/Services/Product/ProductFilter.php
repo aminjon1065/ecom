@@ -63,20 +63,38 @@ class ProductFilter
             $query->where('brand_id', $filters['brand']);
         }
 
+        [$effectivePriceSql, $effectivePriceBindings] = $this->effectivePriceExpression();
+
         if (isset($filters['min_price']) && $filters['min_price'] !== '') {
-            $query->where('price', '>=', $filters['min_price']);
+            $query->where(function (Builder $builder) use ($filters): void {
+                $builder->where(function (Builder $activeOfferQuery) use ($filters): void {
+                    $this->applyActiveOfferConstraint($activeOfferQuery);
+                    $activeOfferQuery->where('offer_price', '>=', $filters['min_price']);
+                })->orWhere(function (Builder $regularPriceQuery) use ($filters): void {
+                    $this->applyInactiveOfferConstraint($regularPriceQuery);
+                    $regularPriceQuery->where('price', '>=', $filters['min_price']);
+                });
+            });
         }
 
         if (isset($filters['max_price']) && $filters['max_price'] !== '') {
-            $query->where('price', '<=', $filters['max_price']);
+            $query->where(function (Builder $builder) use ($filters): void {
+                $builder->where(function (Builder $activeOfferQuery) use ($filters): void {
+                    $this->applyActiveOfferConstraint($activeOfferQuery);
+                    $activeOfferQuery->where('offer_price', '<=', $filters['max_price']);
+                })->orWhere(function (Builder $regularPriceQuery) use ($filters): void {
+                    $this->applyInactiveOfferConstraint($regularPriceQuery);
+                    $regularPriceQuery->where('price', '<=', $filters['max_price']);
+                });
+            });
         }
 
         $query->orderByRaw('qty = 0');
 
         $sort = $filters['sort'] ?? 'latest';
         match ($sort) {
-            'price_asc' => $query->orderBy('price'),
-            'price_desc' => $query->orderByDesc('price'),
+            'price_asc' => $query->orderByRaw("{$effectivePriceSql} asc", $effectivePriceBindings),
+            'price_desc' => $query->orderByRaw("{$effectivePriceSql} desc", $effectivePriceBindings),
             'popular' => $query->orderByDesc('reviews_count'),
             default => $query->latest(),
         };
@@ -101,5 +119,43 @@ class ProductFilter
         }
 
         return array_unique($bigrams);
+    }
+
+    /**
+     * @return array{0: string, 1: array<int, string>}
+     */
+    private function effectivePriceExpression(): array
+    {
+        $today = now()->toDateString();
+
+        return [
+            'case when offer_price is not null and offer_start_date is not null and offer_end_date is not null and offer_start_date <= ? and offer_end_date >= ? then offer_price else price end',
+            [$today, $today],
+        ];
+    }
+
+    private function applyActiveOfferConstraint(Builder $query): void
+    {
+        $today = now()->toDateString();
+
+        $query
+            ->whereNotNull('offer_price')
+            ->whereNotNull('offer_start_date')
+            ->whereNotNull('offer_end_date')
+            ->whereDate('offer_start_date', '<=', $today)
+            ->whereDate('offer_end_date', '>=', $today);
+    }
+
+    private function applyInactiveOfferConstraint(Builder $query): void
+    {
+        $today = now()->toDateString();
+
+        $query->where(function (Builder $builder) use ($today): void {
+            $builder->whereNull('offer_price')
+                ->orWhereNull('offer_start_date')
+                ->orWhereNull('offer_end_date')
+                ->orWhereDate('offer_start_date', '>', $today)
+                ->orWhereDate('offer_end_date', '<', $today);
+        });
     }
 }

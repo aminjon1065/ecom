@@ -3,12 +3,12 @@
 namespace App\Http\Controllers\Vendor;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Vendor\UpdateVendorProfileRequest;
 use App\Models\Order;
 use App\Models\OrderProduct;
 use App\Models\Product;
 use App\Models\ProductReview;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -22,7 +22,7 @@ class VendorController extends Controller
     {
         $vendor = Auth::user()->vendor;
 
-        if (!$vendor) {
+        if (! $vendor) {
             return Inertia::render('vendor/dashboard', [
                 'statistics' => null,
                 'recentOrders' => [],
@@ -33,22 +33,22 @@ class VendorController extends Controller
         $productIds = Product::where('vendor_id', $vendor->id)->pluck('id');
 
         $todayRevenue = OrderProduct::whereIn('product_id', $productIds)
-            ->whereHas('order', fn($q) => $q->where('payment_status', true)->whereDate('created_at', Carbon::today()))
+            ->whereHas('order', fn ($q) => $q->where('payment_status', true)->whereDate('created_at', Carbon::today()))
             ->sum(DB::raw('quantity * unit_price'));
 
         $yesterdayRevenue = OrderProduct::whereIn('product_id', $productIds)
-            ->whereHas('order', fn($q) => $q->where('payment_status', true)->whereDate('created_at', Carbon::yesterday()))
+            ->whereHas('order', fn ($q) => $q->where('payment_status', true)->whereDate('created_at', Carbon::yesterday()))
             ->sum(DB::raw('quantity * unit_price'));
 
         $totalRevenue = OrderProduct::whereIn('product_id', $productIds)
-            ->whereHas('order', fn($q) => $q->where('payment_status', true))
+            ->whereHas('order', fn ($q) => $q->where('payment_status', true))
             ->sum(DB::raw('quantity * unit_price'));
 
-        $totalOrders = Order::whereHas('products', fn($q) => $q->whereIn('product_id', $productIds))
+        $totalOrders = Order::whereHas('products', fn ($q) => $q->whereIn('product_id', $productIds))
             ->count();
 
         $pendingOrders = Order::where('order_status', 'pending')
-            ->whereHas('products', fn($q) => $q->whereIn('product_id', $productIds))
+            ->whereHas('products', fn ($q) => $q->whereIn('product_id', $productIds))
             ->count();
 
         $statistics = [
@@ -64,7 +64,7 @@ class VendorController extends Controller
             'average_rating' => round(ProductReview::whereIn('product_id', $productIds)->where('status', true)->avg('rating') ?? 0, 1),
         ];
 
-        $recentOrders = Order::whereHas('products', fn($q) => $q->whereIn('product_id', $productIds))
+        $recentOrders = Order::whereHas('products', fn ($q) => $q->whereIn('product_id', $productIds))
             ->with('user:id,name,email')
             ->latest()
             ->take(10)
@@ -94,19 +94,11 @@ class VendorController extends Controller
         ]);
     }
 
-    public function updateProfile(Request $request): RedirectResponse
+    public function updateProfile(UpdateVendorProfileRequest $request): RedirectResponse
     {
         $vendor = Auth::user()->vendor;
 
-        $validated = $request->validate([
-            'shop_name' => 'required|string|max:255',
-            'description' => 'nullable|string|max:2000',
-            'address' => 'nullable|string|max:500',
-            'banner' => 'nullable|image|max:2048',
-            'facebook_url' => 'nullable|url|max:255',
-            'telegram_url' => 'nullable|url|max:255',
-            'instagram_url' => 'nullable|url|max:255',
-        ]);
+        $validated = $request->validated();
 
         if ($request->hasFile('banner')) {
             if ($vendor->banner) {

@@ -3,9 +3,10 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\StoreShippingRuleRequest;
+use App\Http\Requests\Admin\UpdateShippingRuleRequest;
 use App\Models\ShippingRules;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -20,15 +21,9 @@ class ShippingRulesController extends Controller
         ]);
     }
 
-    public function store(Request $request): RedirectResponse
+    public function store(StoreShippingRuleRequest $request): RedirectResponse
     {
-        $data = $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'type' => ['required', 'string', 'in:flat,free_shipping,min_cost'],
-            'min_cost' => ['nullable', 'numeric', 'min:0'],
-            'cost' => ['required', 'numeric', 'min:0'],
-            'status' => ['boolean'],
-        ]);
+        $data = $request->validated();
 
         $data['status'] = $data['status'] ?? true;
 
@@ -37,15 +32,9 @@ class ShippingRulesController extends Controller
         return redirect()->back();
     }
 
-    public function update(Request $request, ShippingRules $shippingRule): RedirectResponse
+    public function update(UpdateShippingRuleRequest $request, ShippingRules $shippingRule): RedirectResponse
     {
-        $data = $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'type' => ['required', 'string', 'in:flat,free_shipping,min_cost'],
-            'min_cost' => ['nullable', 'numeric', 'min:0'],
-            'cost' => ['required', 'numeric', 'min:0'],
-            'status' => ['boolean'],
-        ]);
+        $data = $request->validated();
 
         $shippingRule->update($data);
 
@@ -54,7 +43,7 @@ class ShippingRulesController extends Controller
 
     public function toggleStatus(ShippingRules $shippingRule): RedirectResponse
     {
-        $shippingRule->update(['status' => !$shippingRule->status]);
+        $shippingRule->update(['status' => ! $shippingRule->status]);
 
         return redirect()->back();
     }

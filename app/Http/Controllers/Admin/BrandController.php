@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\StoreBrandRequest;
+use App\Http\Requests\Admin\UpdateBrandRequest;
 use App\Models\Brand;
 use App\Services\ImageService;
 use Illuminate\Http\RedirectResponse;
@@ -38,15 +40,9 @@ class BrandController extends Controller
         ]);
     }
 
-    public function store(Request $request): RedirectResponse
+    public function store(StoreBrandRequest $request): RedirectResponse
     {
-        $data = $request->validate([
-            'logo' => ['required', 'image', 'mimes:png,jpg,jpeg,webp,svg', 'max:2048'],
-            'name' => ['required', 'string', 'max:255'],
-            'slug' => ['nullable', 'string', 'max:255', 'unique:brands,slug'],
-            'is_featured' => ['boolean'],
-            'status' => ['boolean'],
-        ]);
+        $data = $request->validated();
 
         $logo = $request->file('logo');
         $data['logo'] = $this->imageService->isRaster($logo)
@@ -61,15 +57,9 @@ class BrandController extends Controller
         return redirect()->back();
     }
 
-    public function update(Request $request, Brand $brand): RedirectResponse
+    public function update(UpdateBrandRequest $request, Brand $brand): RedirectResponse
     {
-        $data = $request->validate([
-            'logo' => ['nullable', 'image', 'mimes:png,jpg,jpeg,webp,svg', 'max:2048'],
-            'name' => ['required', 'string', 'max:255'],
-            'slug' => ['nullable', 'string', 'max:255', 'unique:brands,slug,'.$brand->id],
-            'is_featured' => ['boolean'],
-            'status' => ['boolean'],
-        ]);
+        $data = $request->validated();
 
         if ($request->hasFile('logo')) {
             if ($brand->logo) {

@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Carbon;
 
 /**
  * @property int $id
@@ -161,5 +162,28 @@ class Product extends Model
     public function reviews(): HasMany
     {
         return $this->hasMany(ProductReview::class);
+    }
+
+    public function hasActiveOffer(?Carbon $moment = null): bool
+    {
+        if (! $this->offer_price || ! $this->offer_start_date || ! $this->offer_end_date) {
+            return false;
+        }
+
+        return ($moment ?? now())->between($this->offer_start_date, $this->offer_end_date);
+    }
+
+    public function effectivePrice(?Carbon $moment = null): float
+    {
+        if ($this->hasActiveOffer($moment)) {
+            return (float) $this->offer_price;
+        }
+
+        return (float) $this->price;
+    }
+
+    public function savingsAmount(?Carbon $moment = null): float
+    {
+        return max(0, (float) $this->price - $this->effectivePrice($moment));
     }
 }

@@ -3,10 +3,11 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\StoreFlashSaleRequest;
+use App\Http\Requests\Admin\UpdateFlashSaleRequest;
 use App\Models\FlashSale;
 use App\Models\Product;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -30,14 +31,9 @@ class FlashSaleController extends Controller
         ]);
     }
 
-    public function store(Request $request): RedirectResponse
+    public function store(StoreFlashSaleRequest $request): RedirectResponse
     {
-        $data = $request->validate([
-            'product_id' => ['required', 'exists:products,id'],
-            'end_date' => ['required', 'date', 'after:today'],
-            'status' => ['boolean'],
-            'show_at_main' => ['boolean'],
-        ]);
+        $data = $request->validated();
 
         $data['status'] = $data['status'] ?? true;
         $data['show_at_main'] = $data['show_at_main'] ?? true;
@@ -47,14 +43,9 @@ class FlashSaleController extends Controller
         return redirect()->back();
     }
 
-    public function update(Request $request, FlashSale $flashSale): RedirectResponse
+    public function update(UpdateFlashSaleRequest $request, FlashSale $flashSale): RedirectResponse
     {
-        $data = $request->validate([
-            'product_id' => ['required', 'exists:products,id'],
-            'end_date' => ['required', 'date'],
-            'status' => ['boolean'],
-            'show_at_main' => ['boolean'],
-        ]);
+        $data = $request->validated();
 
         $flashSale->update($data);
 
@@ -63,7 +54,7 @@ class FlashSaleController extends Controller
 
     public function toggleStatus(FlashSale $flashSale): RedirectResponse
     {
-        $flashSale->update(['status' => !$flashSale->status]);
+        $flashSale->update(['status' => ! $flashSale->status]);
 
         return redirect()->back();
     }

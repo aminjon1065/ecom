@@ -3,45 +3,34 @@
 namespace App\Http\Controllers\Client;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Client\StoreUserAddressRequest;
+use App\Http\Requests\Client\UpdateUserAddressRequest;
 use App\Models\UserAddress;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 class UserAddressController extends Controller
 {
-    public function store(Request $request): RedirectResponse
+    public function store(StoreUserAddressRequest $request): RedirectResponse
     {
-        $validated = $request->validate([
-            'address' => 'required|string|max:500',
-            'description' => 'nullable|string|max:255',
-        ]);
-
         UserAddress::create([
             'user_id' => Auth::id(),
-            ...$validated,
+            ...$request->validated(),
         ]);
 
         return redirect()->back();
     }
 
-    public function update(Request $request, UserAddress $address): RedirectResponse
+    public function update(UpdateUserAddressRequest $request, UserAddress $address): RedirectResponse
     {
-        abort_unless($address->user_id === Auth::id(), 403);
-
-        $validated = $request->validate([
-            'address' => 'required|string|max:500',
-            'description' => 'nullable|string|max:255',
-        ]);
-
-        $address->update($validated);
+        $address->update($request->validated());
 
         return redirect()->back();
     }
 
     public function destroy(UserAddress $address): RedirectResponse
     {
-        abort_unless($address->user_id === Auth::id(), 403);
+        $this->authorize('delete', $address);
 
         $address->delete();
 

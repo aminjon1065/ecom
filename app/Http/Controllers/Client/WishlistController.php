@@ -3,11 +3,10 @@
 namespace App\Http\Controllers\Client;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Client\ToggleWishlistRequest;
 use App\Models\Cart;
 use App\Models\Wishlist;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\Request;
-use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -38,10 +37,7 @@ class WishlistController extends Controller
                     return 0.0;
                 }
 
-                $basePrice = (float) $wishlist->product->price;
-                $effectivePrice = $this->getEffectivePrice($wishlist->product);
-
-                return max(0, $basePrice - $effectivePrice);
+                return $wishlist->product->savingsAmount();
             }), 2),
         ];
 
@@ -51,26 +47,9 @@ class WishlistController extends Controller
         ]);
     }
 
-    private function getEffectivePrice(object $product): float
+    public function toggle(ToggleWishlistRequest $request): RedirectResponse
     {
-        if (! $product->offer_price || ! $product->offer_start_date || ! $product->offer_end_date) {
-            return (float) $product->price;
-        }
-
-        $now = now();
-
-        if ($now->between(Carbon::parse($product->offer_start_date), Carbon::parse($product->offer_end_date))) {
-            return (float) $product->offer_price;
-        }
-
-        return (float) $product->price;
-    }
-
-    public function toggle(Request $request): RedirectResponse
-    {
-        $validated = $request->validate([
-            'product_id' => 'required|exists:products,id',
-        ]);
+        $validated = $request->validated();
 
         $wishlist = Wishlist::where('user_id', Auth::id())
             ->where('product_id', $validated['product_id'])
@@ -90,7 +69,7 @@ class WishlistController extends Controller
 
     public function destroy(Wishlist $wishlist): RedirectResponse
     {
-        abort_unless($wishlist->user_id === Auth::id(), 403);
+        $this->authorize('delete', $wishlist);
 
         $wishlist->delete();
 

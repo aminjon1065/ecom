@@ -3,11 +3,12 @@
 namespace App\Http\Controllers\Client;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Client\StoreCartRequest;
+use App\Http\Requests\Client\UpdateCartRequest;
 use App\Models\Cart;
 use App\Models\ShippingRules;
 use App\Services\Product\RecommendationService;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -35,7 +36,7 @@ class CartController extends Controller
                 return 0.0;
             }
 
-            return $this->getEffectivePrice($product) * $cartItem->quantity;
+            return $product->effectivePrice() * $cartItem->quantity;
         }), 2);
 
         $savings = round($cartItems->sum(function (Cart $cartItem): float {
@@ -44,10 +45,7 @@ class CartController extends Controller
                 return 0.0;
             }
 
-            $basePrice = (float) $product->price;
-            $effectivePrice = $this->getEffectivePrice($product);
-
-            return max(0, ($basePrice - $effectivePrice) * $cartItem->quantity);
+            return $product->savingsAmount() * $cartItem->quantity;
         }), 2);
 
         $freeShippingRule = ShippingRules::query()
@@ -77,25 +75,9 @@ class CartController extends Controller
         ]);
     }
 
-    private function getEffectivePrice(object $product): float
+    public function store(StoreCartRequest $request): RedirectResponse
     {
-        if (! $product->offer_price || ! $product->offer_start_date || ! $product->offer_end_date) {
-            return (float) $product->price;
-        }
-
-        if (now()->between($product->offer_start_date, $product->offer_end_date)) {
-            return (float) $product->offer_price;
-        }
-
-        return (float) $product->price;
-    }
-
-    public function store(Request $request): RedirectResponse
-    {
-        $validated = $request->validate([
-            'product_id' => 'required|exists:products,id',
-            'quantity' => 'integer|min:1|max:100',
-        ]);
+        $validated = $request->validated();
 
         $cart = Cart::where('user_id', Auth::id())
             ->where('product_id', $validated['product_id'])
@@ -114,22 +96,16 @@ class CartController extends Controller
         return redirect()->back();
     }
 
-    public function update(Request $request, Cart $cart): RedirectResponse
+    public function update(UpdateCartRequest $request, Cart $cart): RedirectResponse
     {
-        abort_unless($cart->user_id === Auth::id(), 403);
-
-        $validated = $request->validate([
-            'quantity' => 'required|integer|min:1|max:100',
-        ]);
-
-        $cart->update($validated);
+        $cart->update($request->validated());
 
         return redirect()->back();
     }
 
     public function destroy(Cart $cart): RedirectResponse
     {
-        abort_unless($cart->user_id === Auth::id(), 403);
+        $this->authorize('delete', $cart);
 
         $cart->delete();
 

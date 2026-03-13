@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Admin\Product;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\UpdateProductFieldRequest;
 use App\Http\Requests\StoreProductRequest;
 use App\Http\Requests\UpdateProductRequest;
 use App\Models\Brand;
@@ -102,23 +103,11 @@ class ProductController extends Controller
     /**
      * Inline update a single field on a product.
      */
-    public function updateField(Request $request, Product $product): \Illuminate\Http\RedirectResponse
+    public function updateField(UpdateProductFieldRequest $request, Product $product): \Illuminate\Http\RedirectResponse
     {
-        $validated = $request->validate([
-            'field' => ['required', 'string', 'in:price,qty,sku'],
-            'value' => ['present'],
-        ]);
-
+        $validated = $request->validated();
         $field = $validated['field'];
         $value = $validated['value'];
-
-        $rules = match ($field) {
-            'price' => ['value' => ['required', 'numeric', 'min:0']],
-            'qty' => ['value' => ['required', 'integer', 'min:0']],
-            'sku' => ['value' => ['nullable', 'string', 'max:100']],
-        };
-
-        $request->validate($rules);
 
         $product->update([$field => $value]);
 

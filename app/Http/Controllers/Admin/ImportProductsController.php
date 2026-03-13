@@ -3,18 +3,14 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\ImportProductsRequest;
 use App\Services\ProductImportService;
-use Illuminate\Http\Request;
 use Inertia\Inertia;
 
 class ImportProductsController extends Controller
 {
-    public function import(Request $request, ProductImportService $service): \Inertia\Response
+    public function import(ImportProductsRequest $request, ProductImportService $service): \Inertia\Response
     {
-        $request->validate([
-            'file' => 'required|file|mimes:xlsx,xls',
-        ]);
-
         $result = $service->import($request->file('file'));
 
         return Inertia::render('admin/import-products/index', [

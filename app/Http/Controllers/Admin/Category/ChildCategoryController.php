@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Admin\Category;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\StoreChildCategoryRequest;
+use App\Http\Requests\Admin\UpdateChildCategoryRequest;
 use App\Models\Category;
 use App\Models\ChildCategory;
 use App\Models\SubCategory;
@@ -51,15 +53,9 @@ class ChildCategoryController extends Controller
         ]);
     }
 
-    public function store(Request $request): RedirectResponse
+    public function store(StoreChildCategoryRequest $request): RedirectResponse
     {
-        $data = $request->validate([
-            'category_id' => ['required', 'exists:categories,id'],
-            'sub_category_id' => ['required', 'exists:sub_categories,id'],
-            'name' => ['required', 'string', 'max:255'],
-            'slug' => ['nullable', 'string', 'max:255', 'unique:child_categories,slug'],
-            'status' => ['boolean'],
-        ]);
+        $data = $request->validated();
 
         if (empty($data['slug'])) {
             $data['slug'] = Str::slug($data['name']);
@@ -73,14 +69,9 @@ class ChildCategoryController extends Controller
         return redirect()->back();
     }
 
-    public function update(Request $request, ChildCategory $childCategory)
+    public function update(UpdateChildCategoryRequest $request, ChildCategory $childCategory)
     {
-        $data = $request->validate([
-            'category_id' => ['required', 'exists:categories,id'],
-            'sub_category_id' => ['required', 'exists:sub_categories,id'],
-            'name' => ['required', 'string', 'max:255'],
-            'status' => ['boolean'],
-        ]);
+        $data = $request->validated();
 
         $childCategory->update($data);
         Cache::forget('categories_menu');
@@ -98,7 +89,7 @@ class ChildCategoryController extends Controller
         return redirect()->back();
     }
 
-    public function destroy(ChildCategory $childCategory)
+    public function destroy(ChildCategory $childCategory): RedirectResponse
     {
         $childCategory->delete();
         Cache::forget('categories_menu');

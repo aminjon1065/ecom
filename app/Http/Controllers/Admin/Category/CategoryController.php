@@ -3,10 +3,11 @@
 namespace App\Http\Controllers\Admin\Category;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Admin\StoreCategoryRequest;
+use App\Http\Requests\Admin\UpdateCategoryRequest;
 use App\Models\Category;
 use App\Services\ImageService;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
@@ -31,13 +32,9 @@ class CategoryController extends Controller
         ]);
     }
 
-    public function store(Request $request): RedirectResponse
+    public function store(StoreCategoryRequest $request): RedirectResponse
     {
-        $data = $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'icon' => ['nullable', 'image', 'mimes:png,jpg,jpeg,webp,svg', 'max:2048'],
-            'status' => ['boolean'],
-        ]);
+        $data = $request->validated();
 
         if ($request->hasFile('icon')) {
             $icon = $request->file('icon');
@@ -55,24 +52,9 @@ class CategoryController extends Controller
         return redirect()->back()->with('success', 'Категория добавлена');
     }
 
-    public function update(Request $request, Category $category): RedirectResponse
+    public function update(UpdateCategoryRequest $request, Category $category): RedirectResponse
     {
-        $data = $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'slug' => [
-                'nullable',
-                'string',
-                'max:255',
-                'unique:categories,slug,'.$category->id,
-            ],
-            'icon' => [
-                'nullable',
-                'image',
-                'mimes:png,jpg,jpeg,webp,svg',
-                'max:2048',
-            ],
-            'status' => ['boolean'],
-        ]);
+        $data = $request->validated();
         if (empty($data['slug'])) {
             $data['slug'] = Str::slug($data['name']);
         }

@@ -3,9 +3,9 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Auth\StoreGooglePhoneRequest;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
@@ -14,22 +14,16 @@ use Laravel\Socialite\Facades\Socialite;
 
 class GoogleAuthController extends Controller
 {
-    /**
-     * Redirect to Google OAuth.
-     */
     public function redirect(): RedirectResponse
     {
         return Socialite::driver('google')->redirect();
     }
 
-    /**
-     * Handle callback from Google OAuth.
-     */
     public function callback(): RedirectResponse
     {
         try {
             $googleUser = Socialite::driver('google')->user();
-        } catch (\Exception $e) {
+        } catch (\Exception $exception) {
             return redirect()->route('login')->withErrors([
                 'google' => 'Не удалось войти через Google. Попробуйте снова.',
             ]);
@@ -37,8 +31,7 @@ class GoogleAuthController extends Controller
 
         $googleId = $googleUser->getId();
 
-        // Find existing user by google_id
-        $user = User::where('google_id', $googleId)->first();
+        $user = User::query()->where('google_id', $googleId)->first();
 
         if ($user) {
             $user->update([
@@ -51,8 +44,7 @@ class GoogleAuthController extends Controller
             return redirect()->intended('/');
         }
 
-        // Check if user exists with this email
-        $user = User::where('email', $googleUser->getEmail())->first();
+        $user = User::query()->where('email', $googleUser->getEmail())->first();
 
         if ($user) {
             $user->update([
@@ -65,7 +57,6 @@ class GoogleAuthController extends Controller
             return redirect()->intended('/');
         }
 
-        // New user — store Google data in session, redirect to phone input
         session([
             'google_user' => [
                 'id' => $googleId,
@@ -78,14 +69,11 @@ class GoogleAuthController extends Controller
         return redirect()->route('auth.google.phone');
     }
 
-    /**
-     * Show phone input form for new Google users.
-     */
     public function showPhone(): Response|RedirectResponse
     {
         $googleUser = session('google_user');
 
-        if (!$googleUser) {
+        if (! $googleUser) {
             return redirect()->route('login');
         }
 
@@ -94,27 +82,18 @@ class GoogleAuthController extends Controller
         ]);
     }
 
-    /**
-     * Complete registration with phone number.
-     */
-    public function storePhone(Request $request): RedirectResponse
+    public function storePhone(StoreGooglePhoneRequest $request): RedirectResponse
     {
+        /** @var array{id: string, name: string, email: string, avatar: ?string} $googleUser */
         $googleUser = session('google_user');
 
-        if (!$googleUser) {
+        if (! $googleUser) {
             return redirect()->route('login');
         }
 
-        $validated = $request->validate([
-            'phone' => ['required', 'string', 'regex:/^\+?[0-9]{9,15}$/'],
-        ], [
-            'phone.required' => 'Введите номер телефона',
-            'phone.regex' => 'Неверный формат номера телефона',
-        ]);
+        $phone = preg_replace('/[^0-9+]/', '', $request->validated('phone'));
 
-        $phone = preg_replace('/[^0-9+]/', '', $validated['phone']);
-
-        $user = User::create([
+        $user = User::query()->create([
             'name' => $googleUser['name'],
             'email' => $googleUser['email'],
             'phone' => $phone,

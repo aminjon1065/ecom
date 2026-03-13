@@ -2,8 +2,9 @@
 
 namespace App\Http\Controllers\Vendor;
 
-use App\Enums\ProductType;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Vendor\StoreVendorProductRequest;
+use App\Http\Requests\Vendor\UpdateVendorProductRequest;
 use App\Models\Brand;
 use App\Models\Category;
 use App\Models\ChildCategory;
@@ -14,7 +15,6 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
-use Illuminate\Validation\Rules\Enum;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -57,32 +57,10 @@ class VendorProductController extends Controller
         ]);
     }
 
-    public function store(Request $request): RedirectResponse
+    public function store(StoreVendorProductRequest $request): RedirectResponse
     {
         $vendor = Auth::user()->vendor;
-
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'code' => 'required|integer|unique:products,code',
-            'thumb_image' => 'required|image|max:5120',
-            'category_id' => 'required|exists:categories,id',
-            'sub_category_id' => 'nullable|exists:sub_categories,id',
-            'child_category_id' => 'nullable|exists:child_categories,id',
-            'brand_id' => 'required|exists:brands,id',
-            'qty' => 'required|integer|min:0',
-            'sku' => 'nullable|string|max:100',
-            'price' => 'required|numeric|min:0',
-            'cost_price' => 'nullable|numeric|min:0',
-            'offer_price' => 'nullable|numeric|min:0',
-            'offer_start_date' => 'nullable|date',
-            'offer_end_date' => 'nullable|date|after_or_equal:offer_start_date',
-            'short_description' => 'required|string|max:500',
-            'long_description' => 'required|string',
-            'video_link' => 'nullable|url|max:500',
-            'seo_title' => 'nullable|string|max:255',
-            'seo_description' => 'nullable|string|max:500',
-            'product_type' => ['nullable', new Enum(ProductType::class)],
-        ]);
+        $validated = $request->validated();
 
         $validated['vendor_id'] = $vendor->id;
         $validated['slug'] = Str::slug($validated['name']).'-'.Str::random(5);
@@ -111,32 +89,10 @@ class VendorProductController extends Controller
         ]);
     }
 
-    public function update(Request $request, Product $product): RedirectResponse
+    public function update(UpdateVendorProductRequest $request, Product $product): RedirectResponse
     {
         $this->authorize('update', $product);
-
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'code' => 'required|integer|unique:products,code,'.$product->id,
-            'thumb_image' => 'nullable|image|max:5120',
-            'category_id' => 'required|exists:categories,id',
-            'sub_category_id' => 'nullable|exists:sub_categories,id',
-            'child_category_id' => 'nullable|exists:child_categories,id',
-            'brand_id' => 'required|exists:brands,id',
-            'qty' => 'required|integer|min:0',
-            'sku' => 'nullable|string|max:100',
-            'price' => 'required|numeric|min:0',
-            'cost_price' => 'nullable|numeric|min:0',
-            'offer_price' => 'nullable|numeric|min:0',
-            'offer_start_date' => 'nullable|date',
-            'offer_end_date' => 'nullable|date|after_or_equal:offer_start_date',
-            'short_description' => 'required|string|max:500',
-            'long_description' => 'required|string',
-            'video_link' => 'nullable|url|max:500',
-            'seo_title' => 'nullable|string|max:255',
-            'seo_description' => 'nullable|string|max:500',
-            'product_type' => ['nullable', new Enum(ProductType::class)],
-        ]);
+        $validated = $request->validated();
 
         if ($request->hasFile('thumb_image')) {
             if ($product->thumb_image) {
