@@ -24,7 +24,7 @@ class CheckoutController extends Controller
         private readonly CheckoutService $checkoutService,
     ) {}
 
-    public function index(): Response
+    public function index(): Response|RedirectResponse
     {
         $cartItems = Cart::where('user_id', Auth::id())
             ->with(['product:id,name,thumb_image,price,offer_price,offer_start_date,offer_end_date,qty'])

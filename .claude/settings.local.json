@@ -33,7 +33,9 @@
       "Bash(echo \"Updated: $f\")",
       "Bash(done)",
       "Bash(composer show:*)",
-      "Bash(npx playwright:*)"
+      "Bash(npx playwright:*)",
+      "Bash(./vendor/bin/pint --dirty tests/Browser/ tests/Pest.php)",
+      "Bash(./vendor/bin/pint --dirty tests/Browser/CheckoutFlowTest.php app/Http/Controllers/Client/CheckoutController.php)"
     ]
   }
 }
