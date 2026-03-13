@@ -24,11 +24,11 @@ interface Order {
     id: number;
     invoice_id: number;
     transaction_id: string;
-    amount: number;
+    grand_total: number;
     product_quantity: number;
     payment_method: string;
     payment_status: boolean;
-    coupon: string | null;
+    coupon_code: string | null;
     order_status: string;
     created_at: string;
     products: OrderProduct[];
@@ -272,7 +272,7 @@ export default function TrackOrder({ order, error, invoiceId }: Props) {
                                     <div>
                                         <dt className="text-muted-foreground">Сумма</dt>
                                         <dd className="text-lg font-bold text-primary">
-                                            {Number(order.amount).toLocaleString('ru-RU')} сом.
+                                            {Number(order.grand_total).toLocaleString('ru-RU')} сом.
                                         </dd>
                                     </div>
                                 </dl>

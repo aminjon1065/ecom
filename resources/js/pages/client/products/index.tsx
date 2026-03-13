@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
 import {
   Select,
   SelectContent,
@@ -14,7 +15,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Search, SlidersHorizontal, X } from 'lucide-react';
+import { Search, SlidersHorizontal, X } from 'lucide-react';
 
 interface Product {
   id: number;
@@ -263,6 +264,18 @@ export default function ProductsIndex({ products, productsMeta, categories, bran
       },
     });
   }
+
+  const ProductCardSkeleton = () => (
+    <Card className="overflow-hidden">
+      <Skeleton className="aspect-square w-full rounded-none" />
+      <CardContent className="space-y-2 p-2.5 sm:p-3">
+        <Skeleton className="h-3 w-1/3" />
+        <Skeleton className="h-4 w-full" />
+        <Skeleton className="h-4 w-3/4" />
+        <Skeleton className="mt-2 h-4 w-1/2" />
+      </CardContent>
+    </Card>
+  );
 
   const FilterSidebar = () => (
     <div className="space-y-6">
@@ -534,11 +547,15 @@ export default function ProductsIndex({ products, productsMeta, categories, bran
                   ))}
                 </div>
 
-                <div ref={loadMoreRef} className="flex justify-center py-8">
-                  {loading && (
-                    <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-                  )}
-                </div>
+                {loading && (
+                  <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                    {Array.from({ length: 4 }).map((_, i) => (
+                      <ProductCardSkeleton key={i} />
+                    ))}
+                  </div>
+                )}
+
+                <div ref={loadMoreRef} className="py-4" />
               </>
             ) : (
               <Card>

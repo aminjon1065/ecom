@@ -30,7 +30,7 @@ interface Statistics {
 interface RecentOrder {
     id: number;
     invoice_id: number;
-    amount: number;
+    grand_total: number;
     product_quantity: number;
     payment_method: string;
     payment_status: boolean;
@@ -210,7 +210,7 @@ export default function VendorDashboard({ statistics, recentOrders, topProducts 
                                                 </p>
                                             </div>
                                             <div className="text-right">
-                                                <div className="font-medium">{formatCurrency(order.amount)} сом.</div>
+                                                <div className="font-medium">{formatCurrency(order.grand_total)} сом.</div>
                                                 <Badge variant={order.payment_status ? 'default' : 'secondary'} className="text-xs">
                                                     {order.payment_status ? 'Оплачен' : 'Не оплачен'}
                                                 </Badge>

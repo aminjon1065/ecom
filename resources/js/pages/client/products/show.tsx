@@ -21,6 +21,13 @@ import {
 } from 'lucide-react';
 import { useMemo, useState } from 'react';
 
+interface VariantItem {
+    id: number;
+    name: string;
+    price: number;
+    is_default: boolean;
+}
+
 interface Product {
     id: number;
     name: string;
@@ -45,6 +52,7 @@ interface Product {
         user: { id: number; name: string };
     } | null;
     images: { id: number; image: string }[];
+    variant_items: VariantItem[];
     reviews_avg_rating?: number | null;
     reviews_count?: number;
 }
@@ -108,6 +116,8 @@ export default function ProductShow({
     const [reviewRating, setReviewRating] = useState(0);
     const [reviewText, setReviewText] = useState('');
     const [hoveredStar, setHoveredStar] = useState(0);
+    const defaultVariant = product.variant_items.find((v) => v.is_default) ?? product.variant_items[0] ?? null;
+    const [selectedVariantId, setSelectedVariantId] = useState<number | null>(defaultVariant?.id ?? null);
     const [isCartUpdating, setIsCartUpdating] = useState(false);
     const [isWishlistUpdating, setIsWishlistUpdating] = useState(false);
     const [isPriceAlertUpdating, setIsPriceAlertUpdating] = useState(false);
@@ -137,11 +147,14 @@ export default function ProductShow({
         return now >= start && now <= end;
     };
 
+    const selectedVariant = product.variant_items.find((v) => v.id === selectedVariantId) ?? null;
+    const basePrice = selectedVariant ? selectedVariant.price : product.price;
     const currentPrice =
-        isOfferActive() && product.offer_price
+        !selectedVariant && isOfferActive() && product.offer_price
             ? product.offer_price
-            : product.price;
+            : basePrice;
     const hasDiscount =
+        !selectedVariant &&
         isOfferActive() &&
         product.offer_price &&
         product.offer_price < product.price;
@@ -170,6 +183,7 @@ export default function ProductShow({
             {
                 product_id: product.id,
                 quantity: quantity,
+                variant_id: selectedVariantId ?? undefined,
             },
             {
                 preserveScroll: true,
@@ -384,6 +398,38 @@ export default function ProductShow({
                                 </Badge>
                             )}
                         </div>
+
+                        {product.variant_items.length > 0 && (
+                            <>
+                                <Separator />
+                                <div className="space-y-2">
+                                    <p className="text-sm font-medium">
+                                        Вариант
+                                        {selectedVariant && (
+                                            <span className="ml-2 font-normal text-muted-foreground">
+                                                {selectedVariant.name}
+                                            </span>
+                                        )}
+                                    </p>
+                                    <div className="flex flex-wrap gap-2">
+                                        {product.variant_items.map((variant) => (
+                                            <button
+                                                key={variant.id}
+                                                type="button"
+                                                onClick={() => setSelectedVariantId(variant.id)}
+                                                className={`rounded-md border px-3 py-1.5 text-sm transition-colors ${
+                                                    selectedVariantId === variant.id
+                                                        ? 'border-primary bg-primary text-primary-foreground'
+                                                        : 'border-input bg-background hover:bg-muted'
+                                                }`}
+                                            >
+                                                {variant.name}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            </>
+                        )}
 
                         <Separator />
 

@@ -51,7 +51,7 @@ function createAccountOrder(User $user, int $invoiceId, string $status, string $
         'invoice_id' => $invoiceId,
         'transaction_id' => 'TXN-'.$invoiceId,
         'user_id' => $user->id,
-        'amount' => 100,
+        'grand_total' => 100,
         'subtotal' => 100,
         'discount_total' => 0,
         'shipping_total' => 0,
@@ -59,7 +59,7 @@ function createAccountOrder(User $user, int $invoiceId, string $status, string $
         'product_quantity' => 1,
         'payment_method' => 'cash',
         'payment_status' => false,
-        'coupon' => null,
+        'coupon_code' => null,
         'coupon_code' => null,
         'order_status' => $status,
     ]);

@@ -2,6 +2,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { Skeleton } from '@/components/ui/skeleton';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import GetStatusBadge from '@/helper/getStatusBadge';
 import AppAccountLayout from '@/layouts/app/client/account/app-account-layout';
@@ -12,7 +13,7 @@ import { useState } from 'react';
 interface Order {
     id: number;
     invoice_id: number;
-    amount: number;
+    grand_total: number;
     order_status: string;
     payment_status: boolean;
     created_at: string;
@@ -48,20 +49,48 @@ const QUICK_STATUSES = [
     { value: 'cancelled', label: 'Отменённые' },
 ] as const;
 
+function OrderRowSkeleton() {
+    return (
+        <div className="rounded-lg border p-4">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+                <div className="space-y-2">
+                    <Skeleton className="h-5 w-32" />
+                    <Skeleton className="h-4 w-24" />
+                </div>
+                <div className="space-y-2">
+                    <Skeleton className="h-6 w-28" />
+                    <Skeleton className="h-5 w-20" />
+                </div>
+            </div>
+            <div className="mt-3 flex gap-2">
+                <Skeleton className="h-5 w-24" />
+                <Skeleton className="h-4 w-16" />
+            </div>
+            <div className="mt-4 flex gap-2">
+                <Skeleton className="h-8 w-24" />
+                <Skeleton className="h-8 w-24" />
+                <Skeleton className="h-8 w-16" />
+            </div>
+        </div>
+    );
+}
+
 export default function AccountDashboard({ stats, recentOrders, dashboardFilters }: Props) {
     const [filters, setFilters] = useState({
         search: dashboardFilters.search ?? '',
         status: dashboardFilters.status ?? 'all',
     });
+    const [isLoadingOrders, setIsLoadingOrders] = useState(false);
 
     function applyFilters(): void {
+        setIsLoadingOrders(true);
         router.get(
             '/account',
             {
                 search: filters.search || undefined,
                 status: filters.status === 'all' ? undefined : filters.status,
             },
-            { preserveScroll: true, preserveState: true },
+            { preserveScroll: true, preserveState: true, onFinish: () => setIsLoadingOrders(false) },
         );
     }
 
@@ -70,19 +99,20 @@ export default function AccountDashboard({ stats, recentOrders, dashboardFilters
             search: '',
             status: 'all',
         });
-
-        router.get('/account', {}, { preserveScroll: true });
+        setIsLoadingOrders(true);
+        router.get('/account', {}, { preserveScroll: true, onFinish: () => setIsLoadingOrders(false) });
     }
 
     function setQuickStatus(status: string): void {
         setFilters((current) => ({ ...current, status }));
+        setIsLoadingOrders(true);
         router.get(
             '/account',
             {
                 search: filters.search || undefined,
                 status: status === 'all' ? undefined : status,
             },
-            { preserveScroll: true, preserveState: true },
+            { preserveScroll: true, preserveState: true, onFinish: () => setIsLoadingOrders(false) },
         );
     }
 
@@ -215,7 +245,13 @@ export default function AccountDashboard({ stats, recentOrders, dashboardFilters
                         </div>
                     </div>
 
-                    {recentOrders.length > 0 ? (
+                    {isLoadingOrders ? (
+                        <div className="space-y-3">
+                            {Array.from({ length: 3 }).map((_, i) => (
+                                <OrderRowSkeleton key={i} />
+                            ))}
+                        </div>
+                    ) : recentOrders.length > 0 ? (
                         <div className="space-y-4">
                             <div className="text-sm text-muted-foreground">
                                 Показано заказов: {recentOrders.length}
@@ -237,7 +273,7 @@ export default function AccountDashboard({ stats, recentOrders, dashboardFilters
                                             </div>
                                             <div className="text-right">
                                                 <p className="text-lg font-bold">
-                                                    {order.amount.toLocaleString()} сом
+                                                    {order.grand_total.toLocaleString()} сом
                                                 </p>
                                                 <Badge
                                                     variant={order.payment_status ? 'default' : 'secondary'}

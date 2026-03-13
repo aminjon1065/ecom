@@ -30,7 +30,7 @@ it('shows review on product page only after admin moderation approval', function
         'invoice_id' => 840001,
         'transaction_id' => 'TXN-MOD-1',
         'user_id' => $buyer->id,
-        'amount' => 100,
+        'grand_total' => 100,
         'subtotal' => 100,
         'discount_total' => 0,
         'shipping_total' => 0,
@@ -38,7 +38,7 @@ it('shows review on product page only after admin moderation approval', function
         'product_quantity' => 1,
         'payment_method' => 'cash',
         'payment_status' => false,
-        'coupon' => null,
+        'coupon_code' => null,
         'coupon_code' => null,
         'order_status' => 'delivered',
     ]);

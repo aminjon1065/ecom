@@ -172,6 +172,11 @@ class Product extends Model
         return $this->hasMany(ProductReview::class);
     }
 
+    public function variantItems(): HasMany
+    {
+        return $this->hasMany(ProductVariantItem::class);
+    }
+
     public function hasActiveOffer(?Carbon $moment = null): bool
     {
         if (! $this->offer_price || ! $this->offer_start_date || ! $this->offer_end_date) {

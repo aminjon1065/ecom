@@ -215,9 +215,9 @@ export default function Dashboard({
             ),
         },
         {
-            key: 'amount',
+            key: 'grand_total',
             label: 'Сумма',
-            render: (row) => `${formatCurrency(row.amount)} сом.`,
+            render: (row) => `${formatCurrency(row.grand_total)} сом.`,
         },
         {
             key: 'product_quantity',

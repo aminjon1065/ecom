@@ -15,7 +15,7 @@ import { useState } from 'react';
 interface Order {
     id: number;
     invoice_id: number;
-    amount: number;
+    grand_total: number;
     product_quantity: number;
     payment_method: string;
     payment_status: boolean;
@@ -81,9 +81,9 @@ export default function OrderIndex({ orders, filters: initialFilters }: Props) {
             ),
         },
         {
-            key: 'amount',
+            key: 'grand_total',
             label: 'Сумма',
-            render: (row) => `${row.amount.toLocaleString('ru-RU')} сом.`,
+            render: (row) => `${row.grand_total.toLocaleString('ru-RU')} сом.`,
         },
         { key: 'product_quantity', label: 'Товаров' },
         {

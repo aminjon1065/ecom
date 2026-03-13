@@ -28,6 +28,7 @@ class ProductDetailsService
                 'brand:id,name',
                 'vendor.user:id,name',
                 'images',
+                'variantItems' => fn ($q) => $q->where('status', true)->orderBy('is_default', 'desc'),
             ])
             ->withAvg('reviews', 'rating')
             ->withCount('reviews')

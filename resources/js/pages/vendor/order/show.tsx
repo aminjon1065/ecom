@@ -20,7 +20,7 @@ interface OrderProduct {
 interface Order {
     id: number;
     invoice_id: number;
-    amount: number;
+    grand_total: number;
     product_quantity: number;
     payment_method: string;
     payment_status: boolean;

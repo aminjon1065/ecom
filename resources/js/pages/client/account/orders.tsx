@@ -13,7 +13,7 @@ import { useState } from 'react';
 interface Order {
     id: number;
     invoice_id: number;
-    amount: number;
+    grand_total: number;
     order_status: string;
     payment_status: boolean;
     created_at: string;
@@ -207,7 +207,7 @@ export default function AccountOrders({ orders, filters: initialFilters }: Props
                                                     #{order.invoice_id}
                                                 </td>
                                                 <td className="px-2 py-3 font-semibold">
-                                                    {order.amount.toLocaleString()}{' '}
+                                                    {order.grand_total.toLocaleString()}{' '}
                                                     сом
                                                 </td>
                                                 <td className="px-2 py-3">

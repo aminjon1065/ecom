@@ -16,6 +16,7 @@ class StoreCartRequest extends FormRequest
         return [
             'product_id' => ['required', 'exists:products,id'],
             'quantity' => ['nullable', 'integer', 'min:1', 'max:100'],
+            'variant_id' => ['nullable', 'integer', 'exists:product_variant_items,id'],
         ];
     }
 }

@@ -9,9 +9,7 @@ use App\Models\OrderProduct;
 use App\Models\Product;
 use App\Models\ProductReview;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
 use Inertia\Response;
@@ -32,43 +30,52 @@ class VendorController extends Controller
 
         $productIds = Product::where('vendor_id', $vendor->id)->pluck('id');
 
-        $todayRevenue = OrderProduct::whereIn('product_id', $productIds)
-            ->whereHas('order', fn ($q) => $q->where('payment_status', true)->whereDate('created_at', Carbon::today()))
-            ->sum(DB::raw('quantity * unit_price'));
+        // 1 query: merge total/approved/pending product counts.
+        $productStats = Product::where('vendor_id', $vendor->id)
+            ->selectRaw('COUNT(*) as total, SUM(is_approved = 1) as approved, SUM(is_approved = 0) as pending')
+            ->first();
 
-        $yesterdayRevenue = OrderProduct::whereIn('product_id', $productIds)
-            ->whereHas('order', fn ($q) => $q->where('payment_status', true)->whereDate('created_at', Carbon::yesterday()))
-            ->sum(DB::raw('quantity * unit_price'));
+        // 1 query: merge today / yesterday / total revenue via conditional aggregation.
+        $revenueStats = OrderProduct::whereIn('order_products.product_id', $productIds)
+            ->join('orders', 'orders.id', '=', 'order_products.order_id')
+            ->where('orders.payment_status', true)
+            ->selectRaw('
+                SUM(order_products.quantity * order_products.unit_price) as total_revenue,
+                SUM(CASE WHEN DATE(orders.created_at) = CURDATE()
+                    THEN order_products.quantity * order_products.unit_price ELSE 0 END) as today_revenue,
+                SUM(CASE WHEN DATE(orders.created_at) = DATE_SUB(CURDATE(), INTERVAL 1 DAY)
+                    THEN order_products.quantity * order_products.unit_price ELSE 0 END) as yesterday_revenue
+            ')
+            ->first();
 
-        $totalRevenue = OrderProduct::whereIn('product_id', $productIds)
-            ->whereHas('order', fn ($q) => $q->where('payment_status', true))
-            ->sum(DB::raw('quantity * unit_price'));
+        // 1 query: merge total / pending order counts.
+        $orderStats = Order::whereHas('products', fn ($q) => $q->whereIn('product_id', $productIds))
+            ->selectRaw("COUNT(*) as total, SUM(order_status = 'pending') as pending")
+            ->first();
 
-        $totalOrders = Order::whereHas('products', fn ($q) => $q->whereIn('product_id', $productIds))
-            ->count();
-
-        $pendingOrders = Order::where('order_status', 'pending')
-            ->whereHas('products', fn ($q) => $q->whereIn('product_id', $productIds))
-            ->count();
+        // 1 query: review count + average rating.
+        $reviewStats = ProductReview::whereIn('product_id', $productIds)
+            ->selectRaw('COUNT(*) as total, AVG(CASE WHEN status = 1 THEN rating END) as avg_rating')
+            ->first();
 
         $statistics = [
-            'total_revenue' => $totalRevenue,
-            'today_revenue' => $todayRevenue,
-            'yesterday_revenue' => $yesterdayRevenue,
-            'total_orders' => $totalOrders,
-            'pending_orders' => $pendingOrders,
-            'total_products' => Product::where('vendor_id', $vendor->id)->count(),
-            'approved_products' => Product::where('vendor_id', $vendor->id)->where('is_approved', true)->count(),
-            'pending_products' => Product::where('vendor_id', $vendor->id)->where('is_approved', false)->count(),
-            'total_reviews' => ProductReview::whereIn('product_id', $productIds)->count(),
-            'average_rating' => round(ProductReview::whereIn('product_id', $productIds)->where('status', true)->avg('rating') ?? 0, 1),
+            'total_revenue' => (float) ($revenueStats?->total_revenue ?? 0),
+            'today_revenue' => (float) ($revenueStats?->today_revenue ?? 0),
+            'yesterday_revenue' => (float) ($revenueStats?->yesterday_revenue ?? 0),
+            'total_orders' => (int) ($orderStats?->total ?? 0),
+            'pending_orders' => (int) ($orderStats?->pending ?? 0),
+            'total_products' => (int) ($productStats?->total ?? 0),
+            'approved_products' => (int) ($productStats?->approved ?? 0),
+            'pending_products' => (int) ($productStats?->pending ?? 0),
+            'total_reviews' => (int) ($reviewStats?->total ?? 0),
+            'average_rating' => round((float) ($reviewStats?->avg_rating ?? 0), 1),
         ];
 
         $recentOrders = Order::whereHas('products', fn ($q) => $q->whereIn('product_id', $productIds))
             ->with('user:id,name,email')
             ->latest()
             ->take(10)
-            ->get(['id', 'invoice_id', 'user_id', 'amount', 'product_quantity', 'payment_method', 'payment_status', 'order_status', 'created_at']);
+            ->get(['id', 'invoice_id', 'user_id', 'grand_total', 'product_quantity', 'payment_method', 'payment_status', 'order_status', 'created_at']);
 
         $topProducts = Product::where('vendor_id', $vendor->id)
             ->where('is_approved', true)

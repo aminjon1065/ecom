@@ -68,7 +68,7 @@ function makeOrderWithVendorProduct(Vendor $vendor): array
         'order_status' => OrderStatus::Pending,
         'payment_method' => 'cash',
         'payment_status' => false,
-        'amount' => 100.0,
+        'grand_total' => 100.0,
         'product_quantity' => 1,
         'subtotal' => 100.0,
         'shipping_total' => 0.0,

@@ -30,7 +30,7 @@ class AccountController extends Controller
         $totalOrders = Order::where('user_id', $user->id)->count();
         $pendingOrders = Order::where('user_id', $user->id)->where('order_status', 'pending')->count();
         $completedOrders = Order::where('user_id', $user->id)->where('order_status', 'delivered')->count();
-        $totalSpent = Order::where('user_id', $user->id)->where('payment_status', true)->sum('amount');
+        $totalSpent = Order::where('user_id', $user->id)->where('payment_status', true)->sum('grand_total');
 
         $recentOrdersQuery = Order::query()
             ->where('user_id', $user->id)
@@ -119,29 +119,40 @@ class AccountController extends Controller
 
         $order->load('products');
 
+        $userId = Auth::id();
+        $orderProductIds = $order->products->pluck('product_id')->all();
+
+        // Batch-load all purchasable products in one query instead of one per item.
+        $availableProducts = Product::query()
+            ->whereIn('id', $orderProductIds)
+            ->where('status', true)
+            ->where('is_approved', true)
+            ->get()
+            ->keyBy('id');
+
+        // Batch-load existing cart rows in one query instead of one per item.
+        $existingCartItems = Cart::query()
+            ->where('user_id', $userId)
+            ->whereIn('product_id', $orderProductIds)
+            ->get()
+            ->keyBy('product_id');
+
         $addedItems = 0;
 
         foreach ($order->products as $orderItem) {
             /** @var Product|null $product */
-            $product = Product::query()
-                ->where('id', $orderItem->product_id)
-                ->where('status', true)
-                ->where('is_approved', true)
-                ->first();
+            $product = $availableProducts->get($orderItem->product_id);
 
             if (! $product || $product->qty < 1) {
                 continue;
             }
 
-            $existingCart = Cart::query()
-                ->where('user_id', Auth::id())
-                ->where('product_id', $product->id)
-                ->first();
-
             $targetQty = min((int) $orderItem->quantity, (int) $product->qty, 100);
             if ($targetQty < 1) {
                 continue;
             }
+
+            $existingCart = $existingCartItems->get($product->id);
 
             if ($existingCart) {
                 $newQuantity = min($existingCart->quantity + $targetQty, (int) $product->qty, 100);
@@ -152,7 +163,7 @@ class AccountController extends Controller
                 $existingCart->update(['quantity' => $newQuantity]);
             } else {
                 Cart::query()->create([
-                    'user_id' => Auth::id(),
+                    'user_id' => $userId,
                     'product_id' => $product->id,
                     'quantity' => $targetQty,
                 ]);

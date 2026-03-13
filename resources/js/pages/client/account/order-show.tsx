@@ -22,13 +22,13 @@ interface OrderProduct {
 interface Order {
     id: number;
     invoice_id: number;
-    amount: number;
+    grand_total: number;
     order_status: string;
     payment_status: boolean;
     created_at: string;
     transaction_id: string;
     payment_method: string;
-    coupon?: string;
+    coupon_code?: string;
     product_quantity: number;
     products: OrderProduct[];
 }
@@ -211,13 +211,13 @@ export default function OrderShow({ order }: Props) {
                                         </p>
                                     </div>
 
-                                    {order.coupon && (
+                                    {order.coupon_code && (
                                         <div>
                                             <p className="text-sm text-muted-foreground">
                                                 Промокод
                                             </p>
                                             <p className="font-medium">
-                                                {order.coupon}
+                                                {order.coupon_code}
                                             </p>
                                         </div>
                                     )}
@@ -326,13 +326,13 @@ export default function OrderShow({ order }: Props) {
                                         </span>
                                     </div>
 
-                                    {order.coupon && (
+                                    {order.coupon_code && (
                                         <div className="flex justify-between text-green-600">
                                             <span>Скидка (промокод):</span>
                                             <span className="font-medium">
                                                 -
                                                 {(
-                                                    subtotal - order.amount
+                                                    subtotal - order.grand_total
                                                 ).toLocaleString()}{' '}
                                                 сом
                                             </span>
@@ -345,7 +345,7 @@ export default function OrderShow({ order }: Props) {
                                 <div className="flex justify-between text-lg font-bold">
                                     <span>Общая сумма:</span>
                                     <span>
-                                        {order.amount.toLocaleString()} сом
+                                        {order.grand_total.toLocaleString()} сом
                                     </span>
                                 </div>
 

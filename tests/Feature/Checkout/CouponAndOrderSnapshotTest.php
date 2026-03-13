@@ -123,7 +123,6 @@ it('creates order snapshot and consumes coupon', function () {
         ->and($order->shipping_total)->toBe(50.0)
         ->and($order->discount_total)->toBe(20.0)
         ->and($order->grand_total)->toBe(430.0)
-        ->and($order->amount)->toBe(430.0)
         ->and($order->coupon_code)->toBe('FIXED20');
 
     $orderItem = $order->products()->firstOrFail();

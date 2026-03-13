@@ -26,7 +26,14 @@
       "mcp__laravel-boost__database-query",
       "Bash(npm run build)",
       "mcp__laravel-boost__get-config",
-      "mcp__laravel-boost__get-absolute-url"
+      "mcp__laravel-boost__get-absolute-url",
+      "mcp__laravel-boost__application-info",
+      "Bash(while read:*)",
+      "Bash(do sed:*)",
+      "Bash(echo \"Updated: $f\")",
+      "Bash(done)",
+      "Bash(composer show:*)",
+      "Bash(npx playwright:*)"
     ]
   }
 }

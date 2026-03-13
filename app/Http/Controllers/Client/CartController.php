@@ -78,9 +78,11 @@ class CartController extends Controller
     public function store(StoreCartRequest $request): RedirectResponse
     {
         $validated = $request->validated();
+        $variantId = $validated['variant_id'] ?? null;
 
         $cart = Cart::where('user_id', Auth::id())
             ->where('product_id', $validated['product_id'])
+            ->where('product_variant_item_id', $variantId)
             ->first();
 
         if ($cart) {
@@ -89,6 +91,7 @@ class CartController extends Controller
             Cart::create([
                 'user_id' => Auth::id(),
                 'product_id' => $validated['product_id'],
+                'product_variant_item_id' => $variantId,
                 'quantity' => $validated['quantity'] ?? 1,
             ]);
         }

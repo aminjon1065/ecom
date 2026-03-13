@@ -32,11 +32,11 @@ class DashboardController extends Controller
 
         $todayRevenue = Order::where('payment_status', true)
             ->whereDate('created_at', Carbon::today())
-            ->sum('amount');
+            ->sum('grand_total');
 
         $yesterdayRevenue = Order::where('payment_status', true)
             ->whereDate('created_at', Carbon::yesterday())
-            ->sum('amount');
+            ->sum('grand_total');
 
         $hasUserRole = Role::query()
             ->where('name', 'user')
@@ -44,7 +44,7 @@ class DashboardController extends Controller
             ->exists();
 
         $statistics = [
-            'total_revenue' => Order::where('payment_status', true)->sum('amount'),
+            'total_revenue' => Order::where('payment_status', true)->sum('grand_total'),
             'today_revenue' => $todayRevenue,
             'yesterday_revenue' => $yesterdayRevenue,
             'total_orders' => Order::count(),
@@ -78,7 +78,7 @@ class DashboardController extends Controller
         $recentOrders = Order::with('user:id,name,email')
             ->latest()
             ->take(10)
-            ->get(['id', 'invoice_id', 'user_id', 'amount', 'product_quantity', 'payment_method', 'payment_status', 'order_status', 'created_at']);
+            ->get(['id', 'invoice_id', 'user_id', 'grand_total', 'product_quantity', 'payment_method', 'payment_status', 'order_status', 'created_at']);
 
         $pendingReviews = ProductReview::where('status', false)
             ->with(['product:id,name', 'user:id,name'])

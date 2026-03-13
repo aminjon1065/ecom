@@ -13,7 +13,7 @@ import { useState } from 'react';
 interface Order {
     id: number;
     invoice_id: number;
-    amount: number;
+    grand_total: number;
     product_quantity: number;
     payment_method: string;
     payment_status: boolean;
@@ -157,7 +157,7 @@ export default function VendorOrders({ orders, filters }: Props) {
                                                     <div className="font-medium">{order.user.name}</div>
                                                     <div className="text-xs text-muted-foreground">{order.user.email}</div>
                                                 </td>
-                                                <td className="py-3">{formatCurrency(order.amount)} сом.</td>
+                                                <td className="py-3">{formatCurrency(order.grand_total)} сом.</td>
                                                 <td className="py-3">{order.product_quantity}</td>
                                                 <td className="py-3">
                                                     <Badge variant={order.payment_status ? 'default' : 'secondary'}>

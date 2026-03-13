@@ -16,7 +16,7 @@ class OrderController extends Controller
     public function index(Request $request): Response
     {
         $query = Order::with('user:id,name,email,phone,telegram_username')
-            ->select(['id', 'invoice_id', 'user_id', 'amount', 'product_quantity', 'payment_method', 'payment_status', 'order_status', 'created_at']);
+            ->select(['id', 'invoice_id', 'user_id', 'grand_total', 'product_quantity', 'payment_method', 'payment_status', 'order_status', 'created_at']);
 
         if ($request->filled('search')) {
             $search = $request->search;

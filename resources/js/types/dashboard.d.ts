@@ -50,7 +50,7 @@ export interface PendingProduct {
 export interface RecentOrder {
     id: number;
     invoice_id: number;
-    amount: number;
+    grand_total: number;
     product_quantity: number;
     payment_method: string;
     payment_status: boolean;

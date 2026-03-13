@@ -44,7 +44,7 @@ it('shows review form as available for authenticated users who purchased product
         'invoice_id' => 620001,
         'transaction_id' => 'TXN-SHOW-REVIEW-1',
         'user_id' => $user->id,
-        'amount' => 100,
+        'grand_total' => 100,
         'subtotal' => 100,
         'discount_total' => 0,
         'shipping_total' => 0,
@@ -52,7 +52,7 @@ it('shows review form as available for authenticated users who purchased product
         'product_quantity' => 1,
         'payment_method' => 'cash',
         'payment_status' => false,
-        'coupon' => null,
+        'coupon_code' => null,
         'coupon_code' => null,
         'order_status' => 'delivered',
     ]);

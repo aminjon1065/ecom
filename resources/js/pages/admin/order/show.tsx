@@ -24,11 +24,11 @@ interface Order {
     id: number;
     invoice_id: number;
     transaction_id: string;
-    amount: number;
+    grand_total: number;
     product_quantity: number;
     payment_method: string;
     payment_status: boolean;
-    coupon: string | null;
+    coupon_code: string | null;
     order_status: string;
     created_at: string;
     user: { id: number; name: string; email: string; phone: string | null; telegram_username: string | null };
@@ -97,12 +97,12 @@ export default function OrderShow({ order }: { order: Order }) {
                                     ).toLocaleDateString('ru-RU')}
                                 </span>
                             </div>
-                            {order.coupon && (
+                            {order.coupon_code && (
                                 <div className="flex justify-between">
                                     <span className="text-muted-foreground">
                                         Купон
                                     </span>
-                                    <span>{order.coupon}</span>
+                                    <span>{order.coupon_code}</span>
                                 </div>
                             )}
                             <div className="flex items-center justify-between">
@@ -252,7 +252,7 @@ export default function OrderShow({ order }: { order: Order }) {
                         </div>
                         <div className="mt-4 border-t pt-4 text-right">
                             <span className="text-lg font-bold">
-                                Итого: {order.amount.toLocaleString('ru-RU')}{' '}
+                                Итого: {order.grand_total.toLocaleString('ru-RU')}{' '}
                                 сом.
                             </span>
                         </div>

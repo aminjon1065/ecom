@@ -12,12 +12,16 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property int $id
  * @property int $invoice_id
  * @property string $transaction_id
+ * @property string|null $idempotency_key
  * @property int $user_id
- * @property float $amount
+ * @property float $subtotal
+ * @property float $discount_total
+ * @property float $shipping_total
+ * @property float $grand_total
  * @property int $product_quantity
  * @property string $payment_method
  * @property bool $payment_status
- * @property string|null $coupon
+ * @property string|null $coupon_code
  * @property OrderStatus $order_status
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
@@ -28,9 +32,9 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Order newModelQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Order newQuery()
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Order query()
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Order whereAmount($value)
- * @method static \Illuminate\Database\Eloquent\Builder<static>|Order whereCoupon($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Order whereCouponCode($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Order whereCreatedAt($value)
+ * @method static \Illuminate\Database\Eloquent\Builder<static>|Order whereGrandTotal($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Order whereId($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Order whereInvoiceId($value)
  * @method static \Illuminate\Database\Eloquent\Builder<static>|Order whereOrderStatus($value)
@@ -52,7 +56,6 @@ class Order extends Model
         'transaction_id',
         'idempotency_key',
         'user_id',
-        'amount',
         'subtotal',
         'discount_total',
         'shipping_total',
@@ -60,7 +63,6 @@ class Order extends Model
         'product_quantity',
         'payment_method',
         'payment_status',
-        'coupon',
         'coupon_code',
         'order_status',
     ];
@@ -68,7 +70,6 @@ class Order extends Model
     protected $casts = [
         'payment_status' => 'boolean',
         'order_status' => OrderStatus::class,
-        'amount' => 'float',
         'subtotal' => 'float',
         'discount_total' => 'float',
         'shipping_total' => 'float',

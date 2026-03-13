@@ -31,7 +31,7 @@ it('allows purchased user to submit and update review in pending moderation stat
         'invoice_id' => 500001,
         'transaction_id' => 'TXN-REVIEW-1',
         'user_id' => $user->id,
-        'amount' => 100,
+        'grand_total' => 100,
         'subtotal' => 100,
         'discount_total' => 0,
         'shipping_total' => 0,
@@ -39,7 +39,7 @@ it('allows purchased user to submit and update review in pending moderation stat
         'product_quantity' => 1,
         'payment_method' => 'cash',
         'payment_status' => false,
-        'coupon' => null,
+        'coupon_code' => null,
         'coupon_code' => null,
         'order_status' => 'delivered',
     ]);

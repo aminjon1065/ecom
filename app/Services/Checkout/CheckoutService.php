@@ -30,7 +30,10 @@ class CheckoutService
     {
         return Cart::query()
             ->where('user_id', $userId)
-            ->with(['product' => fn ($query) => $query->select($productColumns)])
+            ->with([
+                'product' => fn ($query) => $query->select($productColumns),
+                'variant:id,name,price',
+            ])
             ->get();
     }
 
@@ -153,7 +156,6 @@ class CheckoutService
                     'transaction_id' => 'TXN-'.strtoupper(bin2hex(random_bytes(8))),
                     'idempotency_key' => $idempotencyKey,
                     'user_id' => $userId,
-                    'amount' => $grandTotal,
                     'subtotal' => $subtotal,
                     'discount_total' => $discount,
                     'shipping_total' => $shippingCost,
@@ -161,7 +163,6 @@ class CheckoutService
                     'product_quantity' => $cartItems->sum('quantity'),
                     'payment_method' => $validated['payment_method'],
                     'payment_status' => false,
-                    'coupon' => $couponCode,
                     'coupon_code' => $couponCode,
                     'order_status' => OrderStatus::Pending,
                 ]);
@@ -189,6 +190,8 @@ class CheckoutService
                     OrderProduct::query()->create([
                         'order_id' => $order->id,
                         'product_id' => $item->product_id,
+                        'product_variant_item_id' => $item->product_variant_item_id,
+                        'variant_name' => $item->variant?->name,
                         'quantity' => $item->quantity,
                         'unit_price' => $unitPrice,
                         'discount_amount' => $lineDiscount,
